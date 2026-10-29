@@ -21,6 +21,7 @@
 3. Target Users and Roles
 4. User Stories and Acceptance Criteria
 5. Question Types and Credit Calculation
+6. Non-Functional Requirements
 
 ---
 
@@ -345,3 +346,52 @@ ForecastHub has two types of questions. The user stories describe what users see
 4. **Net gain:** For each resolved question, a user's net gain is the credits they received minus the credits they spent. It is shown only in the user's private results, never on the leaderboard.
 5. **Success rate:** The leaderboard uses success rate, not credits. A resolved question counts as correct for a user when more than half of the credits they spent on it were on the correct answer, so splitting credits evenly across answers never counts as correct. Success rate is correct questions divided by scored questions.
 
+---
+
+## 6. Non-Functional Requirements
+
+### 6.1 UI/UX
+
+1. **Responsive layout:** Every page works on screens from 360 pixels wide (phones) to large desktop monitors, with no sideways scrolling.
+2. **Consistent design:** One set of colors, fonts, spacing, and button styles is used across the whole app, following `DESIGN.md` and the approved mockups. Both answers of an A or B question always use the same two colors.
+3. **Clear feedback:** Every action that spends or changes credits shows a confirmation step first and a success message after. Loading states (such as placeholders or spinners) appear while data loads, and empty states explain what to do next (for example, "No open questions yet").
+4. **Helpful errors:** Error messages appear next to the problem, explain what went wrong in plain words, and keep anything the user already typed.
+5. **Plain-language numbers:** Prices are explained as chances, payouts are shown before confirming, and every displayed time is in Pacific Time with a "PT" label. Displayed prices and shares follow the rounding and display limits in Section 5.
+6. **Accessibility:** The app targets WCAG 2.1 Level AA: keyboard users can complete every flow, focus states are visible, text has sufficient contrast, form fields have accessible labels, answers are never shown by color alone, and charts have a text alternative.
+
+### 6.2 Performance
+
+1. **Page readiness:** Core public pages become usable within 2 seconds for at least 95% of measured loads on a typical phone connection.
+2. **Live updates:** At least 95% of live updates reach connected browsers within 1 second of the server recording the change.
+3. **Prediction response:** Prediction preview and submission, including the server-side price calculation, complete within 1 second for at least 95% of requests under the expected Sprint 1 load.
+4. **Degraded connections:** If a WebSocket connection drops, the UI shows a reconnecting state, retries automatically, and refreshes the latest server data after reconnecting.
+
+### 6.3 Security
+
+1. **Transport security:** Production traffic uses HTTPS. Local development may use HTTP only through documented local configuration.
+2. **Credentials:** Passwords are stored only as secure, one-way hashes. Passwords, JWTs, and other secrets are never written to logs or public responses.
+3. **Server authority:** Every permission check, deadline check, balance check, and credit calculation is performed on the server. Client-supplied prices, balances, roles, payouts, and permissions are never trusted.
+4. **Input and output safety:** All user-entered text, including usernames, questions, and answers, is validated at the API boundary and safely encoded when displayed so it cannot run code or break pages.
+5. **Abuse protection:** Public and private API rate limits follow US-8, and authentication failures return the documented error shape without revealing sensitive account details.
+
+### 6.4 Privacy and data protection
+
+1. **Least-privilege responses:** Public pages and APIs never expose email addresses, balances, balance histories, private predictions, or identifying information about another user's prediction.
+2. **Private access:** Users can access only their own profile, balance, transactions, predictions, payouts, and notices. Organizer and Administrator access is limited to the permissions defined in the PRD.
+3. **Live updates:** Public WebSocket messages contain only aggregate market or pool data. Private messages are sent only to the authenticated user they belong to.
+4. **Removed users:** Removing a user prevents sign-in and public leaderboard display but preserves historical predictions and ledger records required for auditability and other users' results.
+
+### 6.5 Reliability and data integrity
+
+1. **Atomic accounting:** Balance changes, predictions, payouts, refunds, corrections, and coupon redemptions are completed in database transactions or are not applied at all.
+2. **Immutable history:** Original predictions and ledger transactions are never updated or deleted. Corrections, refunds, and moderation actions create new auditable records.
+3. **Concurrency:** The server prevents duplicate charges, overspending, and conflicting resolution actions when requests arrive at the same time.
+4. **Recovery:** A failed request returns an explicit error and leaves balances, predictions, and ledger records in a consistent state.
+5. **Auditability:** Every prediction, payout, refund, correction, coupon redemption, and moderation action records a timestamp, responsible account or system process, amount where applicable, and reason where applicable.
+
+### 6.6 Maintainability and verification
+
+1. **Type safety:** TypeScript uses the repository's strict compiler settings, and shared request and response contracts are reused between the web and API applications where applicable.
+2. **Validation:** Changes to LMSR arithmetic, pool payouts, permissions, deadlines, corrections, or accounting include focused automated tests for successful and rejected cases.
+3. **End-to-end coverage:** The core workflow is tested from registration and browsing through prediction, resolution, payout, and private results, including authorization and failure paths.
+4. **Documentation:** Public and private API behavior, WebSocket messages, setup instructions, and intentional deviations from the PRD remain documented with the implementation.
