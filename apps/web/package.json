@@ -8,9 +8,10 @@
     "start": "next start",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
-    "test": "echo \"Web smoke tests are covered by the browser test suite.\""
+    "test": "vitest run"
   },
   "dependencies": {
+    "@forecasthub/shared": "*",
     "next": "^15.5.4",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
@@ -21,6 +22,7 @@
     "@types/react-dom": "^19.0.2",
     "@tailwindcss/postcss": "^4.1.13",
     "tailwindcss": "^4.1.13",
-    "typescript": "*"
+    "typescript": "*",
+    "vitest": "^3.2.4"
   }
 }

@@ -13,6 +13,23 @@ enum Role {
   ADMINISTRATOR
 }
 
+enum QuestionType {
+  AB
+  MULTI
+}
+
+enum QuestionVisibility {
+  DRAFT
+  PUBLISHED
+  HIDDEN
+}
+
+enum QuestionResolution {
+  UNRESOLVED
+  RESOLVED
+  CANCELLED
+}
+
 model User {
   id           String   @id @default(cuid())
   username     String   @unique
@@ -27,9 +44,49 @@ model User {
 }
 
 model Category {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  createdAt DateTime @default(now())
+  id        String     @id @default(cuid())
+  name      String     @unique
+  createdAt DateTime   @default(now())
+  questions Question[]
+}
+
+model Question {
+  id              String             @id @default(cuid())
+  title           String
+  categoryId      String
+  type            QuestionType
+  visibility      QuestionVisibility @default(PUBLISHED)
+  resolution      QuestionResolution @default(UNRESOLVED)
+  deadline        DateTime
+  criteria        String
+  source          String
+  startingPriceA  Int                @default(50)
+  sharesA         Float              @default(0)
+  sharesB         Float              @default(0)
+  totalCredits    Int                @default(0)
+  creditsLast24h  Int                @default(0)
+  correctAnswerId String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  category Category         @relation(fields: [categoryId], references: [id])
+  answers  QuestionAnswer[]
+
+  @@index([visibility, deadline])
+  @@index([categoryId])
+}
+
+model QuestionAnswer {
+  id         String   @id @default(cuid())
+  questionId String
+  label      String
+  sortOrder  Int
+  credits    Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId, sortOrder])
 }
 
 model Transaction {
