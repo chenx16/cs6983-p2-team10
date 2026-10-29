@@ -1,0 +1,27 @@
+{
+  "name": "forecasthub",
+  "private": true,
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently --kill-others-on-fail \"npm run dev --workspace=@forecasthub/api\" \"npm run dev --workspace=@forecasthub/web\"",
+    "build": "npm run build --workspace=@forecasthub/shared && npm run build --workspace=@forecasthub/api && npm run build --workspace=@forecasthub/web",
+    "lint": "npm run lint --workspace=@forecasthub/shared && npm run lint --workspace=@forecasthub/api && npm run lint --workspace=@forecasthub/web",
+    "typecheck": "npm run typecheck --workspace=@forecasthub/shared && npm run typecheck --workspace=@forecasthub/api && npm run typecheck --workspace=@forecasthub/web",
+    "test": "npm run test --workspace=@forecasthub/shared && npm run test --workspace=@forecasthub/api && npm run test --workspace=@forecasthub/web",
+    "db:generate": "npm run prisma:generate --workspace=@forecasthub/api",
+    "db:migrate": "npm run prisma:migrate --workspace=@forecasthub/api",
+    "db:seed": "npm run prisma:seed --workspace=@forecasthub/api"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.3"
+  }
+}
