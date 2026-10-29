@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ForecastHub – The Arena</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F2F3F6; --side:#FFFFFF; --surface:#FFFFFF; --surface-2:#F3F4F7; --ink:#15181F; --muted:#626A7C;
+  --line:#DFE2E9; --accent:#2F6FEB; --accent-ink:#FFFFFF;
+  --yes:#0F8A4F; --yes-bg:#E1F4EA; --no:#C9333B; --no-bg:#FBE5E6;
+  --hot:#C2410C; --hot-bg:#FFEDE0; --soon:#B45309; --bar:#E6E9EF; --bar-fill:#CFE0FF;
+  --font:"Instrument Sans","Segoe UI",system-ui,-apple-system,sans-serif;
+  color-scheme:light; box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#111317; --side:#16181D; --surface:#1B1E24; --surface-2:#23272F; --ink:#ECEEF2; --muted:#9AA1AF;
+    --line:#2B3038; --accent:#3B82F6; --accent-ink:#FFFFFF;
+    --yes:#3DD68C; --yes-bg:#173828; --no:#FF6B70; --no-bg:#3D1C1F;
+    --hot:#FF9D5C; --hot-bg:#3A2416; --soon:#F5B14C; --bar:#262A32; --bar-fill:#1F3A66; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#111317; --side:#16181D; --surface:#1B1E24; --surface-2:#23272F; --ink:#ECEEF2; --muted:#9AA1AF;
+  --line:#2B3038; --accent:#3B82F6; --accent-ink:#FFFFFF;
+  --yes:#3DD68C; --yes-bg:#173828; --no:#FF6B70; --no-bg:#3D1C1F;
+  --hot:#FF9D5C; --hot-bg:#3A2416; --soon:#F5B14C; --bar:#262A32; --bar-fill:#1F3A66; color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.45}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
+a{color:inherit}
+
+.app{display:grid;grid-template-columns:248px 1fr;min-height:100%}
+
+/* Sidebar */
+.side{background:var(--side);border-right:1px solid var(--line);padding:20px 14px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh;height:100dvh}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.125rem;padding:4px 10px 18px;text-decoration:none}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;text-decoration:none;color:var(--muted);font-weight:500}
+.nav a:hover{color:var(--ink);background:var(--surface-2)}
+.nav a[aria-current="page"]{color:var(--ink);background:var(--surface-2)}
+.nav svg{flex:none;opacity:.9}
+.side-bottom{margin-top:auto;display:flex;flex-direction:column;gap:8px;padding:12px 4px 0;border-top:1px solid var(--line)}
+.side-bottom p{margin:0 6px 4px;color:var(--muted);font-size:.8125rem}
+.btn{border:1px solid var(--line);background:transparent;padding:9px 14px;border-radius:10px;font-weight:600;white-space:nowrap}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.08)}
+
+/* Main */
+.main{min-width:0;padding:0 28px 48px}
+.crumbs{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:.875rem;padding:20px 0 16px;border-bottom:1px solid var(--line)}
+.crumbs b{color:var(--ink);font-weight:500}
+.mobile-bar{display:none}
+.head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin:24px 0 16px}
+h1{font-size:1.625rem;font-weight:600;letter-spacing:-.015em;margin:0}
+.statuses{display:flex;flex-wrap:wrap;gap:6px}
+.st{border:1px solid var(--line);background:transparent;border-radius:999px;padding:5px 12px;font-size:.8125rem;font-weight:500;color:var(--muted)}
+.st[aria-pressed="true"]{color:var(--ink);border-color:var(--ink)}
+.st .n{margin-left:6px;font-variant-numeric:tabular-nums;opacity:.75}
+
+.tabs{display:flex;gap:4px;overflow-x:auto;padding-bottom:4px;margin-bottom:20px;scrollbar-width:thin}
+.tab{flex:none;border:0;background:transparent;padding:8px 14px;border-radius:10px;color:var(--muted);font-weight:500}
+.tab:hover{color:var(--ink)}
+.tab[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.card.past{opacity:.92}
+.meta{display:flex;align-items:center;gap:8px;font-size:.8125rem;color:var(--muted);font-weight:500}
+.ico{width:24px;height:24px;border-radius:7px;background:var(--surface-2);display:grid;place-items:center;flex:none}
+.hot{display:inline-flex;align-items:center;gap:4px;background:var(--hot-bg);color:var(--hot);padding:2px 8px;border-radius:999px;font-weight:600;font-size:.75rem}
+.tag{margin-left:auto;font-size:.75rem;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted)}
+.qt{font-weight:600;font-size:1rem;line-height:1.35;margin:0;min-height:2.7em}
+
+/* A or B */
+.ab{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pick{border:0;border-radius:10px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:600;min-width:0}
+.pick span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pick .pr{font-variant-numeric:tabular-nums}
+.pick.a{background:var(--yes-bg);color:var(--yes)}
+.pick.b{background:var(--no-bg);color:var(--no)}
+.pick:hover:not(:disabled){filter:brightness(1.06)}
+.pick:disabled{cursor:default}
+.pick.lost{opacity:.45}
+.split{height:6px;border-radius:999px;background:var(--no-bg);overflow:hidden}
+.split i{display:block;height:100%;background:var(--yes)}
+.crowd{font-size:.8125rem;color:var(--muted);margin:-4px 0 0}
+
+/* Multi */
+.multi{display:flex;flex-direction:column;gap:6px}
+.opt{position:relative;border:0;background:var(--bar);border-radius:10px;padding:8px 12px;display:flex;justify-content:space-between;gap:8px;text-align:left;overflow:hidden;font-weight:500}
+.opt .fill{position:absolute;inset:0 auto 0 0;background:var(--bar-fill)}
+.opt span{position:relative}
+.opt .pct{font-variant-numeric:tabular-nums;font-weight:600}
+.opt:hover:not(:disabled){outline:1px solid var(--accent)}
+.opt:disabled{cursor:default}
+.opt.win{box-shadow:inset 0 0 0 2px var(--yes)}
+.more{font-size:.8125rem;color:var(--muted);margin:0}
+
+.foot{margin-top:auto;padding-top:12px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:8px;font-size:.8125rem;color:var(--muted)}
+.foot b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+.foot .soon{color:var(--soon);font-weight:600}
+.empty{border:1px dashed var(--line);border-radius:16px;padding:40px;text-align:center;color:var(--muted)}
+.empty strong{display:block;color:var(--ink);margin-bottom:6px}
+.note{margin-top:28px;color:var(--muted);font-size:.8125rem;max-width:72ch}
+
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 20px);transform:translateX(-50%) translateY(16px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:calc(100% - 32px);z-index:20;font-weight:500}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+[hidden]{display:none!important}
+:root{--c1:#3B82F6;--c2:#0F8A4F;--c3:#C2410C;--c4:#9333EA;--c5:#B45309}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--c1:#60A5FA;--c2:#3DD68C;--c3:#FF9D5C;--c4:#C084FC;--c5:#F5D04C}}
+:root[data-theme="dark"]{--c1:#60A5FA;--c2:#3DD68C;--c3:#FF9D5C;--c4:#C084FC;--c5:#F5D04C}
+.qt a{color:inherit;text-decoration:none}
+.qt a:hover{text-decoration:underline}
+
+/* Question detail */
+.d-back{display:inline-block;margin:20px 0 8px}
+.dhead{margin-bottom:18px}
+.dtitle{font-size:clamp(1.375rem,3vw,1.875rem);line-height:1.2;letter-spacing:-.015em;margin:10px 0 6px;max-width:32ch}
+.dsub{margin:0;color:var(--muted);font-weight:500}
+.dsub.soon{color:var(--soon)}
+.dgrid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;min-width:0}
+.panel h2{font-size:1rem;font-weight:600;margin:0 0 14px}
+.phead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px}
+.phead h2{margin:0}
+.d-form{grid-column:2;grid-row:1 / span 4;position:sticky;top:20px}
+.d-crowd,.d-chart,.d-about,.d-mine{grid-column:1}
+.live{display:inline-flex;align-items:center;gap:6px;font-size:.75rem;font-weight:600;color:var(--yes)}
+.live i{width:8px;height:8px;border-radius:50%;background:var(--yes);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.bigab{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.bab{border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.bab span{font-weight:600;overflow-wrap:anywhere}
+.bab b{font-size:2rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.bab.a{background:var(--yes-bg);color:var(--yes)}
+.bab.b{background:var(--no-bg);color:var(--no)}
+.bab.lost{opacity:.45}
+.ptotal{margin:12px 0 0;font-size:.875rem;color:var(--muted)}
+.ptotal b{color:var(--ink)}
+.flash{margin:4px 0 0;font-size:.8125rem;color:var(--accent);min-height:1.2em}
+.pool{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.pool li{position:relative;overflow:hidden;border-radius:10px;background:var(--bar);padding:10px 12px;display:flex;justify-content:space-between;gap:12px;align-items:center}
+.pool .fill{position:absolute;inset:0 auto 0 0;background:var(--bar-fill)}
+.pool .pn,.pool .pc{position:relative}
+.pool .pn{font-weight:600}
+.pool .pc{text-align:right;font-size:.8125rem;color:var(--muted);line-height:1.35}
+.pool .pc b{color:var(--ink);font-size:.9375rem}
+.pool li.win{box-shadow:inset 0 0 0 2px var(--yes)}
+.pool em{font-style:normal;color:var(--yes);font-size:.75rem;margin-left:6px}
+.chart{position:relative;width:100%;touch-action:pan-y}
+.chart svg{display:block;max-width:100%}
+.gl{stroke:var(--line);stroke-width:1}
+.yl,.xl{fill:var(--muted);font-size:11px;font-family:var(--font)}
+.mk{fill:var(--surface);stroke:var(--accent);stroke-width:2.5}
+.hx{stroke:var(--muted);stroke-dasharray:3 3}
+.tip{position:absolute;top:0;pointer-events:none;background:var(--ink);color:var(--bg);font-size:.75rem;padding:6px 8px;border-radius:8px;white-space:nowrap;transform:translateX(-50%);line-height:1.35}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;font-size:.8125rem;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.legend i.dot{border-radius:50%;background:var(--surface);border:2.5px solid var(--accent)}
+.ctable{margin-top:12px;font-size:.875rem}
+.ctable summary{cursor:pointer;color:var(--accent);font-weight:600}
+.tscroll{overflow:auto;max-height:280px;margin-top:8px}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:.875rem}
+th,td{text-align:left;padding:7px 12px 7px 0;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--muted);font-weight:600;font-size:.8125rem}
+.facts{margin:0;display:grid;gap:12px}
+.facts dt{font-size:.8125rem;color:var(--muted);font-weight:600}
+.facts dd{margin:2px 0 0;max-width:65ch}
+.muted{color:var(--muted);margin:0}
+.balrow{margin:0 0 14px;padding:10px 12px;border-radius:10px;background:var(--surface-2);font-size:.875rem;color:var(--muted)}
+.balrow b{color:var(--ink)}
+.ansopts{border:0;padding:0;margin:0 0 14px;display:grid;gap:6px;min-width:0}
+.ansopts legend{font-weight:600;font-size:.875rem;margin-bottom:6px;padding:0}
+.ans{position:relative;display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer}
+.ans input{position:absolute;opacity:0;width:1px;height:1px}
+.ans:has(input:checked){border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.ans:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+.ans .an{font-weight:600}
+.ans .ap{font-variant-numeric:tabular-nums;color:var(--muted);font-weight:600}
+.flabel{display:block;font-weight:600;font-size:.875rem;margin-bottom:6px}
+.amtrow{position:relative}
+.amtrow input{width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:11px 72px 11px 12px;font:inherit;font-size:1.0625rem;font-weight:600;color:var(--ink)}
+.amtrow input:focus{outline:none;border-color:var(--accent)}
+.amtrow input[aria-invalid="true"]{border-color:var(--no)}
+.unit{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:.875rem}
+.quick{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.quick button{border:1px solid var(--line);background:transparent;border-radius:999px;padding:4px 10px;font-size:.8125rem;font-weight:600;color:var(--muted)}
+.quick button:hover{color:var(--ink);border-color:var(--muted)}
+.notice{margin-top:12px;padding:10px 12px;border-radius:10px;background:var(--hot-bg);color:var(--hot);font-size:.875rem;font-weight:500}
+.preview{margin:14px 0}
+.pvhint{margin:0;color:var(--muted);font-size:.875rem}
+.pvl{margin:0;display:grid;gap:8px}
+.pvl div{display:flex;justify-content:space-between;gap:10px;font-size:.875rem}
+.pvl dt{color:var(--muted)}
+.pvl dd{margin:0;font-weight:600;font-variant-numeric:tabular-nums;text-align:right}
+.pvl .big{padding-top:10px;border-top:1px solid var(--line);font-size:.9375rem}
+.pvl .big dt{color:var(--ink);font-weight:500}
+.pvl .big dd{font-size:1.0625rem}
+.gain{color:var(--yes);font-size:.8125rem;margin-left:6px}
+.pvnote{margin:10px 0 0;font-size:.8125rem;color:var(--muted)}
+.fine{margin:10px 0 0;font-size:.75rem;color:var(--muted);text-align:center}
+.closed{margin:0;padding:12px;border-radius:10px;background:var(--surface-2);font-weight:500}
+@media (max-width:1040px){.dgrid{grid-template-columns:1fr}.d-form{grid-column:1;grid-row:auto;position:static}}
+@media (prefers-reduced-motion:reduce){.live i{animation:none}}
+
+/* Sign in */
+.auth-view{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:32px 16px}
+.auth-brand{padding:0}
+.auth-card{width:100%;max-width:400px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:28px}
+.auth-card h1{margin:0 0 6px}
+.auth-sub{margin:0 0 20px;color:var(--muted)}
+.auth-reason{margin:0 0 16px;padding:10px 12px;border-radius:8px;background:var(--surface-2);border-left:3px solid var(--accent);font-weight:500}
+.form-error{background:var(--no-bg);color:var(--no);padding:10px 12px;border-radius:10px;margin-bottom:16px;font-weight:500}
+.field{margin-bottom:16px}
+.field label{display:block;font-weight:600;font-size:.875rem;margin-bottom:6px}
+.field input{width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:11px 12px;font:inherit;color:var(--ink)}
+.field input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent)}
+.field input[aria-invalid="true"]{border-color:var(--no)}
+.err{margin:6px 0 0;color:var(--no);font-size:.8125rem}
+.err:empty{display:none}
+.pw{position:relative}
+.pw input{padding-right:68px}
+.pw-toggle{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:var(--muted);font-weight:600;font-size:.8125rem;padding:6px 8px;border-radius:8px}
+.pw-toggle:hover{color:var(--ink)}
+.btn.full{width:100%;padding:12px;margin-top:4px}
+.btn:disabled{opacity:.6;cursor:default}
+.switch{margin:18px 0 0;text-align:center;color:var(--muted)}
+.link{border:0;background:none;padding:0;color:var(--accent);font-weight:600}
+.link:hover{text-decoration:underline}
+.demo{margin-top:20px;padding:10px 12px;border-radius:10px;background:var(--surface-2);font-size:.8125rem;color:var(--muted)}
+.demo b{color:var(--ink);font-weight:600}
+.back{color:var(--muted);text-decoration:none;font-size:.875rem}
+.back:hover{color:var(--ink)}
+.me{display:flex;align-items:center;gap:10px;padding:4px 6px 8px}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:700;flex:none}
+.me b{display:block;font-weight:600}
+.me .bal{color:var(--muted);font-size:.8125rem}
+.mobile-bal{font-size:.8125rem;color:var(--muted);font-weight:600;white-space:nowrap}
+
+@media (max-width:860px){
+  .app{grid-template-columns:1fr}
+  .side{display:none}
+  .main{padding:0 16px 40px}
+  .crumbs{display:none}
+  .mobile-bar{display:flex;align-items:center;gap:8px;position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--side);margin:0 -16px;padding:10px 16px;border-bottom:1px solid var(--line)}
+  .mobile-bar .brand{padding:0;margin-right:auto;font-size:1.0625rem}
+  .mobile-bar .btn{padding:7px 12px}
+  body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--side)}
+}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+</head>
+<body>
+<div class="app" id="view-arena">
+  <aside class="side" aria-label="Sidebar">
+    <a class="brand" href="#">
+      <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><rect width="28" height="28" rx="8" fill="var(--accent)"/><path d="M6 19 L11 13 L15 16 L22 8" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      ForecastHub
+    </a>
+    <nav class="nav" aria-label="Main">
+      <a href="#" aria-current="page"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Arena</a>
+      <a href="#" data-soon="The leaderboard"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 20V12M12 20V5M18 20v-6"/></svg>Leaderboard</a>
+      <a href="#" data-soon="The API docs page"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6 3 12l5 6M16 6l5 6-5 6"/></svg>API docs</a>
+    </nav>
+    <div class="side-bottom" id="side-auth"></div>
+  </aside>
+
+  <main class="main">
+    <div class="mobile-bar">
+      <a class="brand" href="#">ForecastHub</a>
+      <span id="mobile-auth" style="display:flex;align-items:center;gap:8px"></span>
+    </div>
+    <div class="crumbs"><a href="#" style="text-decoration:none">Arena</a><span aria-hidden="true">›</span><b id="crumb">Open</b></div>
+
+    <div id="arena-list">
+    <div class="head">
+      <h1>The Arena</h1>
+      <div class="statuses" id="statuses" role="group" aria-label="Status"></div>
+    </div>
+    <div class="tabs" id="tabs" role="group" aria-label="Categories"></div>
+
+    <p id="count" class="sr" aria-live="polite" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)"></p>
+    <div class="grid" id="grid"></div>
+    <p class="note">Credits are virtual and free. They can’t be bought, sold, or exchanged for money. All times are Pacific Time. Prototype with sample questions; deadlines are set relative to when you open the page.</p>
+    </div>
+    <section id="detail" hidden></section>
+  </main>
+</div>
+
+<div class="auth-view" id="view-sign-in" hidden>
+  <a class="brand auth-brand" href="#">
+    <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><rect width="28" height="28" rx="8" fill="var(--accent)"/><path d="M6 19 L11 13 L15 16 L22 8" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    ForecastHub
+  </a>
+  <main class="auth-card">
+    <h1>Sign in</h1>
+    <p class="auth-sub">Make predictions, track your credits, and climb the leaderboard.</p>
+    <p class="auth-reason" id="si-reason" hidden></p>
+    <div class="form-error" id="si-error" role="alert" hidden></div>
+    <form id="si-form" novalidate>
+      <div class="field">
+        <label for="si-email">Email address</label>
+        <input id="si-email" name="email" type="email" autocomplete="email" inputmode="email" aria-describedby="si-email-err">
+        <p class="err" id="si-email-err"></p>
+      </div>
+      <div class="field">
+        <label for="si-pass">Password</label>
+        <div class="pw">
+          <input id="si-pass" name="password" type="password" autocomplete="current-password" aria-describedby="si-pass-err">
+          <button type="button" class="pw-toggle" id="pw-toggle" aria-label="Show password">Show</button>
+        </div>
+        <p class="err" id="si-pass-err"></p>
+      </div>
+      <button class="btn primary full" type="submit" id="si-submit">Sign in</button>
+    </form>
+    <p class="switch">New to ForecastHub? <button type="button" class="link" data-soon="The registration screen">Register</button></p>
+    <div class="demo">Prototype account: <b>demo@forecasthub.app</b> with password <b>forecast123</b></div>
+  </main>
+  <a href="#" class="back">Back to the Arena</a>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  const TZ="America/Los_Angeles", H=3600e3, D=24*H;
+  const CATEGORIES=["Sports","Economics","Financials","Crypto","Weather & Climate","Politics","Culture & Entertainment","Tech & Science","Companies","Campus Events"];
+  const STATUSES=["Open","Closing soon","Closed","Resolved","Cancelled"];
+  const ICONS={ "Sports":"⚽","Economics":"📈","Financials":"💹","Crypto":"🪙","Weather & Climate":"🌦️","Politics":"🏛️","Culture & Entertainment":"🎬","Tech & Science":"🔬","Companies":"🏢","Campus Events":"🎓" };
+  const now=Date.now(), base=Math.ceil(now/H)*H;
+
+  // ab: answers [A,B], pA = current price of A (0–1, full precision), credits = total spent
+  // multi: answers [[name, credits]]
+  // c24 = credits spent in the last 24 hours (used for "Hot")
+  const Q=[
+    {t:"Will more than 80 students attend the industry panel?",c:"Campus Events",d:3*H,type:"ab",ans:["Yes","No"],pA:.62,credits:1840,c24:910},
+    {t:"Will it rain in San Jose tomorrow?",c:"Weather & Climate",d:6*H,type:"ab",ans:["Yes","No"],pA:.27,credits:960,c24:420},
+    {t:"Who will arrive first to the CS 301 lecture?",c:"Campus Events",d:14*H,type:"multi",ans:[["Maya",320],["Jordan",210],["Priya",140],["Leo",60],["Other",30]],c24:380},
+    {t:"Will Bitcoin trade above $120,000 when this question closes?",c:"Crypto",d:20*H,type:"ab",ans:["Yes","No"],pA:.41,credits:3120,c24:1450},
+    {t:"Dodgers or Yankees: who will win Game 1?",c:"Sports",d:30*H,type:"ab",ans:["Dodgers","Yankees"],pA:.674,credits:5480,c24:2210},
+    {t:"Which movie will top the box office this weekend?",c:"Culture & Entertainment",d:2*D+4*H,type:"multi",ans:[["Starfall",860],["The Long Field",540],["Paper Moons",290],["Other",110]],c24:300},
+    {t:"Will the 49ers beat the Seahawks on Sunday?",c:"Sports",d:4*D+2*H,type:"ab",ans:["49ers","Seahawks"],pA:.58,credits:2650,c24:640},
+    {t:"Which song will be No. 1 on the Billboard Hot 100 next week?",c:"Culture & Entertainment",d:5*D,type:"multi",ans:[["Neon Hearts",410],["Golden Hour Again",380],["Driftwood",150],["Other",60]],c24:120},
+    {t:"Will the city council approve the new downtown bike lane plan?",c:"Politics",d:14*D,type:"ab",ans:["Yes","No"],pA:.71,credits:780,c24:40},
+    {t:"Will the campus library extend its finals-week hours?",c:"Campus Events",d:20*D,type:"ab",ans:["Yes","No"],pA:.83,credits:520,c24:30},
+    {t:"Will the average gas price in California be above $6.00 on December 1?",c:"Economics",d:33*D,type:"ab",ans:["Yes","No"],pA:.36,credits:2240,c24:180},
+    {t:"Will the Federal Reserve cut interest rates at its December meeting?",c:"Economics",d:40*D,type:"ab",ans:["Yes","No"],pA:.55,credits:1990,c24:260},
+    {t:"Will a new crewed Moon mission launch before the end of the year?",c:"Tech & Science",d:50*D,type:"ab",ans:["Yes","No"],pA:.18,credits:640,c24:0},
+    {t:"Will Apple stock close the year above $250?",c:"Financials",d:60*D,type:"ab",ans:["Yes","No"],pA:.47,credits:1310,c24:90},
+    {t:"Will Tesla report more than 500,000 deliveries for Q4?",c:"Companies",d:70*D,type:"ab",ans:["Yes","No"],pA:.39,credits:880,c24:20},
+    {t:"Which country will win the next World Cup?",c:"Sports",d:200*D,type:"multi",ans:[["Brazil",420],["France",250],["Argentina",160],["England",90],["Spain",50],["Other",30]],c24:150},
+    {t:"Will it be over 80°F in San Jose on Monday afternoon?",c:"Weather & Climate",d:-30*H,type:"ab",ans:["Yes","No"],pA:.44,credits:700,c24:0},
+    {t:"Will the Warriors win their next home game?",c:"Sports",d:-10*H,type:"ab",ans:["Yes","No"],pA:.61,credits:1520,c24:0},
+    {t:"Will the fall hackathon get more than 200 sign-ups?",c:"Campus Events",d:-3*D,type:"ab",ans:["Yes","No"],pA:.52,credits:1100,c24:0,outcome:"resolved",correct:0},
+    {t:"Which dorm will win the homecoming spirit contest?",c:"Campus Events",d:-6*D,type:"multi",ans:[["North Hall",540],["Cedar House",380],["West Tower",200]],c24:0,outcome:"resolved",correct:1},
+    {t:"Will the outdoor movie night draw more than 100 people?",c:"Campus Events",d:-2*D,type:"ab",ans:["Yes","No"],pA:.48,credits:430,c24:0,outcome:"cancelled"},
+    {t:"Hidden question (should not appear)",c:"Sports",d:9*D,type:"ab",ans:["Yes","No"],pA:.5,credits:0,c24:0,vis:"hidden"},
+    {t:"Draft question (should not appear)",c:"Campus Events",d:9*D,type:"ab",ans:["Yes","No"],pA:.5,credits:0,c24:0,vis:"draft"}
+  ].map((q,i)=>({...q,id:"q"+(i+1),deadline:base+q.d})).filter(q=>!q.vis);
+
+  Q.forEach(q=>{ if(q.type==="multi") q.credits=q.ans.reduce((s,a)=>s+a[1],0); });
+
+  function statusOf(q){
+    if(q.outcome==="cancelled") return "Cancelled";
+    if(q.outcome==="resolved") return "Resolved";
+    if(q.deadline<=now) return "Closed";
+    return q.deadline-now<=D ? "Closing soon" : "Open";
+  }
+  const matches=(q,sel)=>{ const s=statusOf(q); return sel.has(s) || (s==="Closing soon"&&sel.has("Open")); };
+
+  // "Hot": the 3 open questions with the most credits spent in the last 24 hours.
+  const HOT=new Set(Q.filter(q=>q.deadline>now && !q.outcome && q.c24>0).sort((a,b)=>b.c24-a.c24).slice(0,3).map(q=>q.id));
+
+  const fmt=o=>new Intl.DateTimeFormat("en-US",{timeZone:TZ,...o});
+  const dateF=fmt({month:"short",day:"numeric"}), timeF=fmt({hour:"numeric",minute:"2-digit"}), yearF=fmt({year:"numeric"});
+  const nf=new Intl.NumberFormat("en-US");
+  function whenText(q){
+    const ms=q.deadline-now;
+    if(ms>0 && ms<=D){ const m=Math.max(1,Math.round(ms/6e4)); return {txt: m<60?`Closes in ${m} min`:`Closes in ${Math.floor(m/60)} h${m%60?" "+(m%60)+" min":""}`, soon:true}; }
+    const y=yearF.format(q.deadline)!==yearF.format(now)?", "+yearF.format(q.deadline):"";
+    return {txt:(ms>0?"Closes ":"Closed ")+dateF.format(q.deadline)+y+", "+timeF.format(q.deadline)+" PT", soon:false};
+  }
+  // Displayed A price: whole number within 1–99; B = 100 − A (CR-6).
+  const dispA=p=>Math.min(99,Math.max(1,Math.round(p*100)));
+
+  const state={statuses:new Set(["Open"]),cats:new Set()};
+  const $=id=>document.getElementById(id);
+  const el=(tag,cls,text)=>{const e=document.createElement(tag); if(cls) e.className=cls; if(text!=null) e.textContent=text; return e;};
+
+  function renderControls(){
+    const s=$("statuses"); s.replaceChildren();
+    STATUSES.forEach(st=>{
+      const n=Q.filter(q=>(!state.cats.size||state.cats.has(q.c))&&matches(q,new Set([st]))).length;
+      const b=el("button","st",st); b.type="button"; b.setAttribute("aria-pressed",state.statuses.has(st));
+      const c=el("span","n",n); b.append(c);
+      b.onclick=()=>{state.statuses.has(st)?state.statuses.delete(st):state.statuses.add(st); render();};
+      s.append(b);
+    });
+    const t=$("tabs"); t.replaceChildren();
+    const all=el("button","tab","All"); all.type="button"; all.setAttribute("aria-pressed",!state.cats.size);
+    all.onclick=()=>{state.cats.clear(); render();}; t.append(all);
+    CATEGORIES.forEach(cat=>{
+      const b=el("button","tab",cat); b.type="button"; b.setAttribute("aria-pressed",state.cats.has(cat));
+      b.onclick=()=>{state.cats.has(cat)?state.cats.delete(cat):state.cats.add(cat); render();};
+      t.append(b);
+    });
+    if(!cur) $("crumb").textContent = state.statuses.size ? [...state.statuses].join(", ") : "All statuses";
+  }
+
+  // Picking an answer on a card opens the question with that answer selected.
+  function predict(q,answer){ preselect[q.id]=answer; location.hash=q.id; }
+
+  function card(q){
+    const st=statusOf(q), open=st==="Open"||st==="Closing soon";
+    const c=el("article","card"+(open?"":" past"));
+    const meta=el("div","meta");
+    const ico=el("span","ico",ICONS[q.c]); ico.setAttribute("aria-hidden","true");
+    meta.append(ico, el("span",null,q.c));
+    if(HOT.has(q.id)){ const h=el("span","hot","🔥 Hot"); h.title="One of the most active questions in the last 24 hours"; meta.append(h); }
+    if(st==="Closed"||st==="Resolved"||st==="Cancelled") meta.append(el("span","tag",st));
+    const qh=el("h2","qt"), ql=el("a",null,q.t); ql.href="#"+q.id; qh.append(ql);
+    c.append(meta, qh);
+
+    if(q.type==="ab"){
+      const a=dispA(q.pA), b=100-a;
+      const row=el("div","ab");
+      [[q.ans[0],a,"a",0],[q.ans[1],b,"b",1]].forEach(([name,p,cls,idx])=>{
+        const btn=el("button","pick "+cls); btn.type="button";
+        btn.append(el("span",null,name), el("span","pr",p));
+        btn.setAttribute("aria-label",`${name}, price ${p}`+(open?". Predict":""));
+        if(!open){ btn.disabled=true; if(st==="Resolved"&&q.correct!==idx) btn.classList.add("lost"); }
+        else btn.onclick=()=>predict(q,name);
+        row.append(btn);
+      });
+      const split=el("div","split"); const fill=el("i"); fill.style.width=a+"%"; split.append(fill); split.setAttribute("aria-hidden","true");
+      c.append(row, split);
+      const leader=a>=b?[q.ans[0],a]:[q.ans[1],b];
+      let line = st==="Resolved" ? `Correct answer: ${q.ans[q.correct]}` : st==="Cancelled" ? "Cancelled. All credits were refunded." : `The crowd thinks ${leader[0]} is about ${leader[1]}% likely.`;
+      c.append(el("p","crowd",line));
+    } else {
+      const total=q.credits, list=el("div","multi");
+      const sorted=q.ans.map((a,i)=>({name:a[0],cr:a[1],i})).sort((x,y)=>y.cr-x.cr);
+      const shown = st==="Resolved" ? [sorted.find(x=>x.i===q.correct), ...sorted.filter(x=>x.i!==q.correct)].slice(0,3) : sorted.slice(0,3);
+      shown.forEach(o=>{
+        const pct=total?Math.round(o.cr/total*100):0;
+        const btn=el("button","opt"); btn.type="button";
+        const fill=el("span","fill"); fill.style.width=pct+"%";
+        btn.append(fill, el("span",null,o.name), el("span","pct",o.cr?pct+"%":"No predictions yet"));
+        btn.setAttribute("aria-label",`${o.name}, ${pct}% of the pool`+(open?". Predict":""));
+        if(!open){ btn.disabled=true; if(st==="Resolved"&&o.i===q.correct) btn.classList.add("win"); }
+        else btn.onclick=()=>predict(q,o.name);
+        list.append(btn);
+      });
+      c.append(list);
+      const rest=q.ans.length-shown.length;
+      if(st==="Resolved") c.append(el("p","more",`Correct answer: ${q.ans[q.correct][0]}`));
+      else if(st==="Cancelled") c.append(el("p","more","Cancelled. All credits were refunded."));
+      else if(rest>0) c.append(el("p","more",`+${rest} more answer${rest>1?"s":""}`));
+    }
+
+    const f=el("div","foot");
+    const cr=el("span"); const b=el("b",null,nf.format(q.credits)); cr.append(b," credits");
+    const w=whenText(q); const wt=el("span",w.soon?"soon":null,w.txt);
+    f.append(cr,wt); c.append(f);
+    return c;
+  }
+
+  function render(){
+    renderControls();
+    const sel=state.statuses.size?state.statuses:new Set(STATUSES);
+    const items=Q.filter(q=>(!state.cats.size||state.cats.has(q.c))&&matches(q,sel));
+    const up=items.filter(q=>q.deadline>now).sort((a,b)=>a.deadline-b.deadline);
+    const past=items.filter(q=>q.deadline<=now).sort((a,b)=>b.deadline-a.deadline);
+    const g=$("grid"); g.replaceChildren();
+    $("count").textContent=(up.length+past.length)+" questions";
+    if(!up.length&&!past.length){
+      const e=el("div","empty"); e.style.gridColumn="1/-1";
+      e.append(el("strong",null,"No questions match these filters"),"Try another status or category.");
+      const r=el("button","btn","Reset filters"); r.type="button"; r.style.marginTop="14px"; r.onclick=()=>{state.statuses=new Set(["Open"]);state.cats.clear();render();};
+      e.append(el("br"),r); g.append(e); return;
+    }
+    up.concat(past).forEach(q=>g.append(card(q)));
+  }
+
+  let tt; function toast(m){const t=$("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove("show"),2600);}
+  document.querySelectorAll("[data-soon]").forEach(e=>e.addEventListener("click",ev=>{ev.preventDefault(); toast(e.dataset.soon+" isn’t built yet in this prototype.");}));
+  /* ---------- Auth (prototype: no server, token is simulated) ---------- */
+  const TOKEN_KEY="fh_token";
+  const DEMO={email:"demo@forecasthub.app",password:"forecast123",username:"demo_user",balance:1000};
+  let memToken=null, signInReason=null;
+  const enc=o=>btoa(JSON.stringify(o)).replace(/=+$/,"").replace(/\+/g,"-").replace(/\//g,"_");
+  const dec=s=>JSON.parse(atob(s.replace(/-/g,"+").replace(/_/g,"/")));
+  function makeToken(u){ const iat=Math.floor(Date.now()/1000); return enc({alg:"none",typ:"JWT"})+"."+enc({sub:u.username,iat,exp:iat+7*86400})+".prototype"; }
+  function getToken(){ try{ return localStorage.getItem(TOKEN_KEY) ?? memToken; }catch(e){ return memToken; } }
+  function setToken(t){ memToken=t; try{ t ? localStorage.setItem(TOKEN_KEY,t) : localStorage.removeItem(TOKEN_KEY); }catch(e){} }
+  function readSession(){
+    const t=getToken(); if(!t) return null;
+    try{ const p=dec(t.split(".")[1]); if(p.exp*1000<=Date.now()){ setToken(null); return null; } return {username:p.sub,balance:DEMO.balance}; }
+    catch(e){ setToken(null); return null; }
+  }
+  let session=readSession();
+
+  function goSignIn(){ signInReason=null; returnHash=/^#q\d+$/.test(location.hash)?location.hash.slice(1):null; location.hash="sign-in"; }
+  function signOut(){ setToken(null); session=null; renderAuth(); render(); if(cur){ $("crumb").textContent=cur.c; buildForm(cur); updateDetail(cur); } toast("Signed out."); }
+
+  function renderAuth(){
+    const side=$("side-auth"), mob=$("mobile-auth");
+    side.replaceChildren(); mob.replaceChildren();
+    if(session){
+      const me=el("div","me"); me.append(el("span","avatar",session.username[0].toUpperCase()));
+      const info=el("div"); info.append(el("b",null,session.username), el("span","bal",nf.format(session.balance)+" credits"));
+      me.append(info);
+      const so=el("button","btn","Sign out"); so.type="button"; so.onclick=signOut;
+      side.append(me,so);
+      const mb=el("span","mobile-bal",nf.format(session.balance)+" credits");
+      const so2=el("button","btn","Sign out"); so2.type="button"; so2.onclick=signOut;
+      mob.append(mb,so2);
+    } else {
+      side.append(el("p",null,"Sign in to make predictions. New accounts start with 1,000 free credits."));
+      const r=el("button","btn primary","Register"); r.type="button"; r.onclick=()=>toast("The registration screen isn’t built yet in this prototype.");
+      const s=el("button","btn","Sign in"); s.type="button"; s.onclick=goSignIn;
+      side.append(r,s);
+      const s2=el("button","btn","Sign in"); s2.type="button"; s2.onclick=goSignIn;
+      const r2=el("button","btn primary","Register"); r2.type="button"; r2.onclick=r.onclick;
+      mob.append(s2,r2);
+    }
+  }
+
+  const emailIn=$("si-email"), passIn=$("si-pass"), submitBtn=$("si-submit");
+  function fieldError(input,errId,msg){ $(errId).textContent=msg||""; input.setAttribute("aria-invalid", msg?"true":"false"); }
+  function clearErrors(){ fieldError(emailIn,"si-email-err"); fieldError(passIn,"si-pass-err"); $("si-error").hidden=true; }
+  emailIn.addEventListener("input",()=>fieldError(emailIn,"si-email-err"));
+  passIn.addEventListener("input",()=>fieldError(passIn,"si-pass-err"));
+
+  $("pw-toggle").addEventListener("click",()=>{
+    const show=passIn.type==="password"; passIn.type=show?"text":"password";
+    $("pw-toggle").textContent=show?"Hide":"Show"; $("pw-toggle").setAttribute("aria-label",show?"Hide password":"Show password");
+  });
+
+  $("si-form").addEventListener("submit",e=>{
+    e.preventDefault(); clearErrors();
+    const email=emailIn.value.trim(), pass=passIn.value;
+    let first=null;
+    if(!email){ fieldError(emailIn,"si-email-err","Enter your email address."); first=first||emailIn; }
+    else if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ fieldError(emailIn,"si-email-err","Enter a valid email address, like name@example.com."); first=first||emailIn; }
+    if(!pass){ fieldError(passIn,"si-pass-err","Enter your password."); first=first||passIn; }
+    if(first){ first.focus(); return; }
+
+    submitBtn.disabled=true; submitBtn.textContent="Signing in…";
+    setTimeout(()=>{ // stands in for POST /api/v1/private/auth/sign-in
+      submitBtn.disabled=false; submitBtn.textContent="Sign in";
+      if(email.toLowerCase()===DEMO.email && pass===DEMO.password){
+        setToken(makeToken(DEMO)); session=readSession();
+        $("si-form").reset(); passIn.type="password"; $("pw-toggle").textContent="Show";
+        renderAuth(); render(); location.hash=returnHash||""; returnHash=null;
+        toast(`Signed in as ${session.username}.`);
+      } else {
+        const fe=$("si-error"); fe.textContent="That email and password don’t match an account. Check them and try again."; fe.hidden=false;
+        passIn.value=""; passIn.focus();
+      }
+    },600);
+  });
+
+  function route(){
+    const signIn=location.hash==="#sign-in";
+    if(signIn && session){ location.hash=""; return; }
+    $("view-arena").hidden=signIn; $("view-sign-in").hidden=!signIn;
+    const m=/^#(q\d+)$/.exec(location.hash), dq=m?(Q.find(x=>x.id===m[1])||null):null;
+    if(signIn){ stopLive(); cur=null; } else showDetail(dq);
+    document.title = signIn ? "Sign in – ForecastHub" : dq ? dq.t+" – ForecastHub" : "ForecastHub – The Arena";
+    if(signIn){
+      clearErrors();
+      const r=$("si-reason"); r.hidden=!signInReason; r.textContent=signInReason||"";
+      setTimeout(()=>emailIn.focus(),0);
+    }
+    window.scrollTo(0,0);
+  }
+  window.addEventListener("hashchange",route);
+
+  /* ---------- Question detail and predictions ---------- */
+  const LIQ=500, PAY=100, MIN=10;
+  let returnHash=null, cur=null, pvSig=null, liveT=null, flashT=null;
+  const myPreds=[];   // this prototype's record of the signed-in user's own predictions
+  const preselect={};
+  const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const fullF=fmt({weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
+  const ptFull=t=>fullF.format(t)+" PT";
+  const answerName=(q,i)=>q.type==="ab"?q.ans[i]:q.ans[i][0];
+  const isOpenNow=q=>!q.outcome && Date.now()<q.deadline;
+  function rng(seed){ let s=7; for(const ch of seed) s=(s*31+ch.charCodeAt(0))>>>0; return ()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; }; }
+
+  // LMSR (Section 5.1): C(A,B) = 500 ln(exp(100(A+A0)/500) + exp(100B/500)), computed stably.
+  const lse=(x,y)=>{ const m=Math.max(x,y); return m+Math.log(Math.exp(x-m)+Math.exp(y-m)); };
+  const cost=(q,A,B)=>LIQ*lse(PAY*(A+q.A0)/LIQ, PAY*B/LIQ);
+  const priceA=(q,A=q.sA,B=q.sB)=>1/(1+Math.exp(PAY*B/LIQ-PAY*(A+q.A0)/LIQ));
+  // Largest purchase in 0.01-share steps whose whole-credit charge (ceiling) fits the budget.
+  function quoteAB(q,idx,budget){
+    const base=cost(q,q.sA,q.sB);
+    const at=n=>{ const d=n/100; const c=idx===0?cost(q,q.sA+d,q.sB):cost(q,q.sA,q.sB+d); return Math.ceil(c-base-1e-9); };
+    let lo=0, hi=100;
+    while(at(hi)<=budget && hi<1e9){ lo=hi; hi*=2; }
+    while(hi-lo>1){ const mid=Math.floor((lo+hi)/2); if(at(mid)<=budget) lo=mid; else hi=mid; }
+    if(lo===0) return null;
+    const charge=at(lo); if(charge<MIN) return null;
+    const shares=lo/100;
+    const afterA= idx===0?priceA(q,q.sA+shares,q.sB):priceA(q,q.sA,q.sB+shares);
+    return {shares, charge, avg:charge/shares, afterA, payout:lo};
+  }
+  function computeQuote(q,idx,amt){
+    if(q.type==="ab") return quoteAB(q,idx,amt);
+    const pool=q.credits, on=q.ans[idx][1];
+    return {charge:amt, est:Math.floor((pool+amt)*amt/(on+amt))};
+  }
+  const shareList=q=>q.ans.map(a=>q.credits?a[1]/q.credits*100:0);
+  function pushHist(q){ q.hist.push({t:Date.now(), v:q.type==="ab"?[priceA(q)*100]:shareList(q)}); }
+
+  const DETAILS={
+    q1:{crit:"Resolves Yes if the check-in count at the start of the panel is more than 80 students.",src:"Career Center check-in sheet"},
+    q2:{p0:.4,crit:"Resolves Yes if at least 0.01 inch of rain is recorded at San Jose airport (SJC) on that calendar day.",src:"National Weather Service daily climate report for SJC",eventAfter:2*H},
+    q3:{crit:"Resolves to the first listed student to enter the lecture hall. Resolves Other if anyone else arrives first.",src:"TA attendance log"},
+    q4:{p0:.45,crit:"Resolves Yes if the BTC/USD price is above $120,000 at the moment predictions close.",src:"CoinGecko BTC/USD price"},
+    q5:{crit:"Resolves to the team that wins Game 1, including extra innings.",src:"MLB.com official box score"},
+    q6:{crit:"Resolves to the film with the highest domestic gross for the Friday to Sunday weekend.",src:"Box Office Mojo weekend chart",eventAfter:3*D},
+    q7:{crit:"Resolves to the team that wins the game, including overtime.",src:"NFL.com final score"},
+    q11:{p0:.4,crit:"Resolves Yes if the AAA California average price for regular gas on December 1 is above $6.00.",src:"AAA Gas Prices, California"},
+    q12:{crit:"Resolves Yes if the Federal Reserve lowers its target range for the federal funds rate at the December meeting.",src:"Federal Reserve press release"},
+    q16:{crit:"Resolves to the country that wins the final.",src:"FIFA.com"}
+  };
+  Q.forEach(q=>{
+    const d=DETAILS[q.id]||{}, r=rng(q.id), N=40;
+    q.crit=d.crit||"Resolves to the listed answer that matches the source at the event time.";
+    q.src=d.src||"Source named by the organizer";
+    q.event=q.deadline+(d.eventAfter||0);
+    q.version=0;
+    const end=Math.min(now,q.deadline);
+    q.opened=end-(4+Math.floor(r()*10))*D;
+    if(q.type==="ab"){
+      q.p0=d.p0||.5; q.A0=5*Math.log(q.p0/(1-q.p0));
+      // Rebuild share totals that give the sample price and total credits.
+      const diff=5*Math.log(q.pA/(1-q.pA))-q.A0, c0=cost(q,0,0);
+      let lo=Math.max(0,-diff), hi=lo+2000;
+      for(let i=0;i<60;i++){ const mid=(lo+hi)/2; if(cost(q,mid+diff,mid)-c0<q.credits) lo=mid; else hi=mid; }
+      q.sB=Math.round(lo*100)/100; q.sA=Math.round((lo+diff)*100)/100; q.pA=priceA(q);
+      const L0=Math.log(q.p0/(1-q.p0)), L1=Math.log(q.pA/(1-q.pA));
+      const W=[0]; for(let k=1;k<=N;k++) W.push(W[k-1]+(r()-.5)*.5);
+      q.hist=[]; for(let k=0;k<=N;k++){ const f=k/N, L=L0+(L1-L0)*f+(W[k]-f*W[N]); q.hist.push({t:q.opened+(end-q.opened)*f, v:[100/(1+Math.exp(-L))]}); }
+      q.hist[N].v=[q.pA*100];
+    } else {
+      const ex=q.ans.map(()=>.6+r()*1.2);
+      q.hist=[]; for(let k=1;k<=N;k++){ const f=k/N, cr=q.ans.map((a,i)=>a[1]*Math.pow(f,ex[i])), tot=cr.reduce((s,x)=>s+x,0); q.hist.push({t:q.opened+(end-q.opened)*f, v:cr.map(x=>tot?x/tot*100:0)}); }
+    }
+  });
+
+  function showDetail(q){
+    stopLive();
+    const list=$("arena-list"), det=$("detail");
+    if(!q){ cur=null; det.hidden=true; det.replaceChildren(); list.hidden=false; render(); return; }
+    cur=q; list.hidden=true; det.hidden=false;
+    $("crumb").textContent=q.c;
+    buildDetail(q); buildForm(q); updateDetail(q,false); startLive(q);
+  }
+
+  function buildDetail(q){
+    const st=statusOf(q);
+    $("detail").innerHTML=`
+      <a class="back d-back" href="#">Back to the Arena</a>
+      <header class="dhead">
+        <div class="meta"><span class="ico" aria-hidden="true">${ICONS[q.c]}</span><span>${esc(q.c)}</span>${HOT.has(q.id)&&isOpenNow(q)?'<span class="hot">🔥 Hot</span>':''}<span class="tag" id="d-status"></span></div>
+        <h1 class="dtitle">${esc(q.t)}</h1>
+        <p class="dsub" id="d-when"></p>
+      </header>
+      <div class="dgrid">
+        <section class="panel d-crowd" aria-labelledby="d-crowd-h">
+          <div class="phead"><h2 id="d-crowd-h">Crowd prediction</h2><span class="live" id="d-live"><i></i>Live</span></div>
+          <div id="d-crowd-body"></div>
+          <p class="ptotal" id="d-total"></p>
+          <p class="flash" id="d-flash" aria-live="polite"></p>
+        </section>
+        <aside class="panel d-form" aria-labelledby="d-form-h">
+          <h2 id="d-form-h">Make a prediction</h2>
+          <div id="d-form-body"></div>
+        </aside>
+        <section class="panel d-chart" aria-labelledby="d-chart-h">
+          <div class="phead"><h2 id="d-chart-h">${q.type==="ab"?`Price of ${esc(q.ans[0])} over time`:"Share of credits over time"}</h2></div>
+          <div class="chart" id="d-chart"></div>
+          <div class="legend" id="d-legend"></div>
+          <details class="ctable"><summary>Show chart data as a table</summary><div class="tscroll" id="d-table"></div></details>
+        </section>
+        <section class="panel d-about" aria-labelledby="d-about-h">
+          <h2 id="d-about-h">About this question</h2>
+          <dl class="facts">
+            <div><dt>How it resolves</dt><dd>${esc(q.crit)}</dd></div>
+            <div><dt>Source</dt><dd>${esc(q.src)}</dd></div>
+            <div><dt>Predictions close</dt><dd>${ptFull(q.deadline)}</dd></div>
+            <div><dt>Event time</dt><dd>${ptFull(q.event)}</dd></div>
+            <div><dt>How credits work</dt><dd>${q.type==="ab"?"Buy shares of either answer at the current price. Each share of the correct answer pays 100 credits.":`Every credit goes into one shared pool. Everyone who picks the correct answer shares the whole pool, in proportion to the credits they spent.`}</dd></div>
+          </dl>
+        </section>
+        <section class="panel d-mine" aria-labelledby="d-mine-h">
+          <h2 id="d-mine-h">Your predictions</h2>
+          <div id="d-mine"></div>
+        </section>
+      </div>`;
+  }
+
+  function formClosedText(q){
+    if(q.outcome==="cancelled") return "This question was cancelled. Every prediction was refunded.";
+    if(q.outcome==="resolved") return `This question is resolved. The correct answer is ${answerName(q,q.correct)}.`;
+    if(Date.now()>=q.deadline) return `Predictions closed at ${ptFull(q.deadline)}.`;
+    return null;
+  }
+
+  function buildForm(q){
+    const body=$("d-form-body"); if(!body) return;
+    pvSig=null;
+    const closed=formClosedText(q);
+    if(closed){ body.innerHTML=`<p class="closed">${esc(closed)}</p>`; return; }
+    const names=q.ans.map((a,i)=>answerName(q,i));
+    const sel=preselect[q.id]!=null?names.indexOf(preselect[q.id]):-1; preselect[q.id]=null;
+    body.innerHTML=`
+      <p class="balrow" id="f-bal"></p>
+      <fieldset class="ansopts"><legend>Your answer</legend>
+        ${names.map((n,i)=>`<label class="ans"><input type="radio" name="f-ans" value="${i}" ${i===sel?"checked":""}><span class="an">${esc(n)}</span><span class="ap" id="f-ap-${i}"></span></label>`).join("")}
+      </fieldset>
+      <label class="flabel" for="f-amt">Credits to spend</label>
+      <div class="amtrow"><input id="f-amt" type="number" inputmode="numeric" min="10" step="1" placeholder="At least 10" aria-describedby="f-amt-err"><span class="unit">credits</span></div>
+      <div class="quick" id="f-quick">${[10,50,100,250].map(v=>`<button type="button" data-v="${v}">${v}</button>`).join("")}<button type="button" data-v="max">All</button></div>
+      <p class="err" id="f-amt-err"></p>
+      <div class="notice" id="f-notice" role="status" hidden></div>
+      <div class="preview" id="f-pv" aria-live="polite"></div>
+      <button class="btn primary full" type="button" id="f-go">Confirm prediction</button>
+      <p class="fine">Predictions are final. You can’t change or withdraw one, but you can add more.</p>`;
+    const refresh=()=>{ $("f-notice").hidden=true; updatePreview(q); };
+    body.querySelectorAll('input[name="f-ans"]').forEach(r=>r.addEventListener("change",refresh));
+    $("f-amt").addEventListener("input",refresh);
+    $("f-amt").addEventListener("keydown",e=>{ if(e.key==="Enter" && !$("f-go").disabled) submit(q); });
+    $("f-quick").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b||$("f-amt").disabled) return; $("f-amt").value=b.dataset.v==="max"?(session?session.balance:1000):b.dataset.v; refresh(); });
+    $("f-go").addEventListener("click",()=>submit(q));
+  }
+
+  function readForm(){
+    const r=document.querySelector('input[name="f-ans"]:checked'), v=$("f-amt").value.trim();
+    return {idx:r?+r.value:null, amt:v===""?null:Number(v)};
+  }
+
+  function updatePreview(q){
+    const pv=$("f-pv"); if(!pv) return;
+    const go=$("f-go"), err=$("f-amt-err"), input=$("f-amt");
+    err.textContent=""; input.removeAttribute("aria-invalid"); pvSig=null;
+    go.textContent=session?"Confirm prediction":"Sign in to predict"; go.disabled=!!session;
+    if(session && session.balance<MIN){ input.disabled=true; pv.innerHTML='<p class="pvhint">You need at least 10 credits to predict. You get 100 free credits every Monday.</p>'; return; }
+    input.disabled=false;
+    const {idx,amt}=readForm();
+    if(amt!==null){
+      let m=null;
+      if(!Number.isInteger(amt)) m="Enter a whole number of credits.";
+      else if(amt<MIN) m="The minimum is 10 credits.";
+      else if(session && amt>session.balance) m=`You have ${nf.format(session.balance)} credits. Enter that amount or less.`;
+      if(m){ err.textContent=m; input.setAttribute("aria-invalid","true"); pv.innerHTML=""; return; }
+    }
+    if(idx===null||amt===null){ pv.innerHTML='<p class="pvhint">Pick an answer and enter credits to see what you’d be charged and what you could win.</p>'; return; }
+    const name=esc(answerName(q,idx)), qu=computeQuote(q,idx,amt);
+    if(!qu){ pv.innerHTML='<p class="pvhint">Enter a larger amount.</p>'; return; }
+    if(q.type==="ab"){
+      const cp=p=>idx===0?dispA(p):100-dispA(p);
+      pv.innerHTML=`<dl class="pvl">
+        <div><dt>You’ll be charged</dt><dd>${nf.format(qu.charge)} credits</dd></div>
+        <div><dt>Shares of ${name}</dt><dd>${qu.shares.toFixed(2)}</dd></div>
+        <div><dt>Average price</dt><dd>${qu.avg.toFixed(1)}</dd></div>
+        <div><dt>Price of ${name}</dt><dd>${cp(q.pA)} → ${cp(qu.afterA)}</dd></div>
+        <div class="big"><dt>If ${name} is correct</dt><dd>${nf.format(qu.payout)} credits<span class="gain">+${nf.format(qu.payout-qu.charge)}</span></dd></div>
+      </dl><p class="pvnote">Each winning share pays 100 credits, so this amount won’t change.${qu.charge<amt?` You’re charged ${qu.charge}, not ${amt}, because shares are sold in steps of 0.01.`:""}</p>`;
+    } else {
+      pv.innerHTML=`<dl class="pvl">
+        <div><dt>You’ll be charged</dt><dd>${nf.format(qu.charge)} credits</dd></div>
+        <div><dt>Pool after your prediction</dt><dd>${nf.format(q.credits+amt)} credits</dd></div>
+        <div class="big"><dt>If ${name} is correct, about</dt><dd>${nf.format(qu.est)} credits<span class="gain">+${nf.format(qu.est-amt)}</span></dd></div>
+      </dl><p class="pvnote">This is an estimate. It will change as others predict, because everyone on the correct answer shares the whole pool.</p>`;
+    }
+    pvSig={version:q.version,idx,amt};
+    go.disabled=false;
+  }
+
+  function updateForm(q,live){
+    if(!$("f-pv")) return;
+    $("f-bal").innerHTML=session?`Your balance: <b>${nf.format(session.balance)} credits</b>`:"Sign in to see your balance. New accounts start with 1,000 credits.";
+    q.ans.forEach((a,i)=>{ const e=$("f-ap-"+i); if(e) e.textContent=q.type==="ab"?(i===0?dispA(q.pA):100-dispA(q.pA)):Math.round(q.credits?a[1]/q.credits*100:0)+"%"; });
+    const had=pvSig;
+    updatePreview(q);
+    if(live && had && pvSig){ const n=$("f-notice"); n.textContent="Someone else just predicted, so these numbers changed. Check them before you confirm."; n.hidden=false; }
+  }
+
+  function submit(q){
+    if(!session){ signInReason=`Sign in to predict on “${q.t}”.`; returnHash=q.id; location.hash="sign-in"; return; }
+    if(Date.now()>=q.deadline){ buildForm(q); updateDetail(q,false); toast(`Predictions closed at ${ptFull(q.deadline)}. No credits were spent.`); return; }
+    const sig=pvSig; if(!sig){ updatePreview(q); $("f-amt").focus(); return; }
+    // Stands in for the server's check: the numbers you confirm must match the current market.
+    if(sig.version!==q.version){ updateForm(q,true); return; }
+    const qu=computeQuote(q,sig.idx,sig.amt); if(!qu) return;
+    if(qu.charge>session.balance){ updatePreview(q); return; }
+    if(q.type==="ab"){ if(sig.idx===0) q.sA+=qu.shares; else q.sB+=qu.shares; q.pA=priceA(q); }
+    else q.ans[sig.idx][1]+=sig.amt;
+    q.credits+=qu.charge; session.balance-=qu.charge; q.version++;
+    myPreds.push({qid:q.id,user:session.username,idx:sig.idx,answer:answerName(q,sig.idx),charge:qu.charge,shares:qu.shares||0,avg:qu.avg||0,t:Date.now()});
+    pushHist(q);
+    $("f-amt").value=""; $("f-notice").hidden=true;
+    renderAuth(); updateDetail(q,false);
+    toast(`Prediction recorded: ${nf.format(qu.charge)} credits on ${answerName(q,sig.idx)}.`);
+  }
+
+  const minePreds=q=>session?myPreds.filter(p=>p.qid===q.id&&p.user===session.username):[];
+
+  function updateDetail(q,live){
+    if(cur!==q) return;
+    const st=statusOf(q), tag=$("d-status");
+    tag.textContent=st; tag.hidden=(st==="Open"||st==="Closing soon")&&isOpenNow(q);
+    const w=whenText(q), dw=$("d-when");
+    dw.textContent=w.soon?`${w.txt} (${ptFull(q.deadline)})`:w.txt; dw.classList.toggle("soon",w.soon&&isOpenNow(q));
+    $("d-live").hidden=!isOpenNow(q);
+
+    const body=$("d-crowd-body");
+    if(q.type==="ab"){
+      const a=dispA(q.pA), b=100-a, lead=a>=b?[q.ans[0],a]:[q.ans[1],b];
+      const line=q.outcome==="resolved"?`The correct answer is ${q.ans[q.correct]}.`:q.outcome==="cancelled"?"Cancelled. Every prediction was refunded.":`The crowd thinks ${lead[0]} is about ${lead[1]}% likely.`;
+      const lost=i=>q.outcome==="resolved"&&q.correct!==i?" lost":"";
+      body.innerHTML=`<div class="bigab"><div class="bab a${lost(0)}"><span>${esc(q.ans[0])}</span><b>${a}</b></div><div class="bab b${lost(1)}"><span>${esc(q.ans[1])}</span><b>${b}</b></div></div><div class="split" aria-hidden="true"><i style="width:${a}%"></i></div><p class="crowd" style="margin-top:10px">${esc(line)}</p>`;
+    } else {
+      const rows=q.ans.map((a,i)=>({i,name:a[0],cr:a[1]})).sort((x,y)=>y.cr-x.cr);
+      body.innerHTML=`<ol class="pool">${rows.map(r=>{ const pct=q.credits?Math.round(r.cr/q.credits*100):0, win=q.outcome==="resolved"&&q.correct===r.i;
+        return `<li class="${win?"win":""}"><span class="fill" style="width:${pct}%"></span><span class="pn">${esc(r.name)}${win?"<em>Correct</em>":""}</span><span class="pc">${r.cr?`<b>${pct}%</b> of the pool, ${nf.format(r.cr)} credits<br>1 credit returns about ${(q.credits/r.cr).toFixed(1)}`:"No predictions yet"}</span></li>`; }).join("")}</ol>`;
+    }
+    $("d-total").innerHTML=`<b>${nf.format(q.credits)}</b> credits spent in total`;
+    drawChart(q); renderTable(q); renderMine(q); updateForm(q,live);
+  }
+
+  const COLORS=["var(--c1)","var(--c2)","var(--c3)","var(--c4)","var(--c5)"];
+  function chartSeries(q){
+    if(q.type==="ab") return [{name:q.ans[0],idx:0,color:"var(--yes)"}];
+    return q.ans.map((a,i)=>({i,cr:a[1]})).sort((x,y)=>y.cr-x.cr).slice(0,5).map((o,k)=>({name:q.ans[o.i][0],idx:o.i,color:COLORS[k]}));
+  }
+  const nearest=(hist,t)=>hist.reduce((b,p)=>Math.abs(p.t-t)<Math.abs(b.t-t)?p:b,hist[0]);
+  function drawChart(q){
+    const box=$("d-chart"); if(!box) return;
+    const Wd=Math.max(260,box.clientWidth||600), Ht=230, pl=34, pr=12, pT=12, pb=28;
+    const hist=q.hist, t0=hist[0].t, t1=Math.max(hist[hist.length-1].t,t0+1);
+    const X=t=>pl+(t-t0)/(t1-t0)*(Wd-pl-pr), Y=v=>pT+(1-v/100)*(Ht-pT-pb);
+    const ser=chartSeries(q), mine=minePreds(q), span=t1-t0, pctSign=q.type==="ab"?"":"%";
+    let s=`<svg width="${Wd}" height="${Ht}" viewBox="0 0 ${Wd} ${Ht}" role="img" aria-label="${esc($("d-chart-h").textContent)}. The table below lists each point.">`;
+    [0,25,50,75,100].forEach(v=>{ s+=`<line class="gl" x1="${pl}" x2="${Wd-pr}" y1="${Y(v)}" y2="${Y(v)}"/><text class="yl" x="${pl-6}" y="${Y(v)+4}" text-anchor="end">${v}${pctSign}</text>`; });
+    for(let k=0;k<=3;k++){ const t=t0+span*k/3; s+=`<text class="xl" x="${X(t)}" y="${Ht-8}" text-anchor="${k===0?"start":k===3?"end":"middle"}">${span<2*D?timeF.format(t):dateF.format(t)}</text>`; }
+    ser.forEach(se=>{ const d=hist.map((p,k)=>(k?"L":"M")+X(p.t).toFixed(1)+","+Y(p.v[se.idx]).toFixed(1)).join(""); s+=`<path d="${d}" fill="none" stroke="${se.color}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>`; });
+    mine.forEach(p=>{ const pt=nearest(hist,p.t), i=q.type==="ab"?0:p.idx; s+=`<circle class="mk" r="5" cx="${X(p.t)}" cy="${Y(pt.v[i])}"/>`; });
+    s+=`<line class="hx" id="ch-x" x1="-9" x2="-9" y1="${pT}" y2="${Ht-pb}"/></svg><div class="tip" id="ch-tip" hidden></div>`;
+    box.innerHTML=s;
+    const tip=$("ch-tip"), xl=$("ch-x");
+    box.onpointermove=e=>{
+      const rect=box.getBoundingClientRect(), x=Math.min(Math.max(e.clientX-rect.left,pl),Wd-pr);
+      const p=nearest(hist,t0+(x-pl)/(Wd-pl-pr)*span), px=X(p.t);
+      xl.setAttribute("x1",px); xl.setAttribute("x2",px);
+      const vals=q.type==="ab"?`${esc(q.ans[0])} ${dispA(p.v[0]/100)}, ${esc(q.ans[1])} ${100-dispA(p.v[0]/100)}`:ser.map(se=>`${esc(se.name)} ${Math.round(p.v[se.idx])}%`).join(", ");
+      tip.innerHTML=`${ptFull(p.t)}<br>${vals}`; tip.hidden=false;
+      tip.style.left=Math.min(Math.max(px,tip.offsetWidth/2),Wd-tip.offsetWidth/2)+"px";
+    };
+    box.onpointerleave=()=>{ tip.hidden=true; xl.setAttribute("x1",-9); xl.setAttribute("x2",-9); };
+    $("d-legend").innerHTML=(q.type==="multi"?ser.map(se=>`<span><i style="background:${se.color}"></i>${esc(se.name)}</span>`).join(""):"")+(mine.length?'<span><i class="dot"></i>Your predictions</span>':"");
+  }
+  function renderTable(q){
+    const rows=q.hist.slice(-60).reverse();
+    const heads=q.type==="ab"?[`Price of ${q.ans[0]}`,`Price of ${q.ans[1]}`]:q.ans.map(a=>a[0]);
+    const cells=p=>q.type==="ab"?[dispA(p.v[0]/100),100-dispA(p.v[0]/100)]:p.v.map(v=>Math.round(v)+"%");
+    $("d-table").innerHTML=`<table><thead><tr><th>Time</th>${heads.map(h=>`<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows.map(p=>`<tr><td>${ptFull(p.t)}</td>${cells(p).map(c=>`<td>${c}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+  }
+  function renderMine(q){
+    const box=$("d-mine");
+    if(!session){ box.innerHTML='<p class="muted">Sign in to see your predictions on this question.</p>'; return; }
+    const mine=minePreds(q);
+    if(!mine.length){ box.innerHTML='<p class="muted">You haven’t predicted on this question yet. Only you can see your predictions.</p>'; return; }
+    const ab=q.type==="ab";
+    let summary="";
+    if(ab){ const pay=[0,1].map(i=>mine.filter(p=>p.idx===i).reduce((s,p)=>s+Math.round(p.shares*100),0)); summary=`If ${esc(q.ans[0])} is correct, you get ${nf.format(pay[0])} credits. If ${esc(q.ans[1])} is correct, you get ${nf.format(pay[1])}.`; }
+    else summary=`You’ve spent ${nf.format(mine.reduce((s,p)=>s+p.charge,0))} credits on this question.`;
+    box.innerHTML=`<div class="tscroll" style="margin-top:0"><table><thead><tr><th>Answer</th><th>Credits</th>${ab?"<th>Shares</th><th>Avg price</th>":""}<th>Time</th></tr></thead><tbody>${mine.slice().reverse().map(p=>`<tr><td>${esc(p.answer)}</td><td>${nf.format(p.charge)}</td>${ab?`<td>${p.shares.toFixed(2)}</td><td>${p.avg.toFixed(1)}</td>`:""}<td>${ptFull(p.t)}</td></tr>`).join("")}</tbody></table></div><p class="muted" style="margin-top:12px">${summary}</p>`;
+  }
+
+  // Simulated live updates: other people predicting (stands in for the WebSocket feed).
+  function stopLive(){ clearTimeout(liveT); liveT=null; }
+  function startLive(q){
+    if(!isOpenNow(q)) return;
+    const loop=()=>{ liveT=setTimeout(()=>{ if(cur!==q||!isOpenNow(q)) return; otherPredicts(q); loop(); }, 7000+Math.random()*9000); };
+    loop();
+  }
+  function otherPredicts(q){
+    const amt=20+Math.floor(Math.random()*130);
+    if(q.type==="ab"){ const idx=Math.random()<q.pA?0:1, qu=quoteAB(q,idx,amt); if(!qu) return; if(idx===0) q.sA+=qu.shares; else q.sB+=qu.shares; q.pA=priceA(q); q.credits+=qu.charge; }
+    else { const w=q.ans.map(a=>a[1]+50); let r=Math.random()*w.reduce((s,x)=>s+x,0), i=0; while(i<w.length-1&&r>w[i]){ r-=w[i]; i++; } q.ans[i][1]+=amt; q.credits+=amt; }
+    q.version++; pushHist(q); updateDetail(q,true);
+    const f=$("d-flash"); f.textContent="Someone just made a prediction."; clearTimeout(flashT); flashT=setTimeout(()=>{ f.textContent=""; },3000);
+  }
+  setInterval(()=>{ if(cur&&!cur.outcome&&$("f-pv")&&Date.now()>=cur.deadline){ buildForm(cur); updateDetail(cur,false); } },1000);
+  let rz; window.addEventListener("resize",()=>{ clearTimeout(rz); rz=setTimeout(()=>{ if(cur) drawChart(cur); },120); });
+
+  renderAuth();
+  render();
+  route();
+})();
+</script>
+</body>
+</html>

@@ -4,6 +4,14 @@
 
 **Team:** Xinlai Chen, Qiong Wu
 
+**Prototype:** [ForecastHub web app](https://claude.ai/artifact/LvCy6LCDw3Ci83pab18Nz5)
+
+| Screen | What it shows | How to open it | User stories |
+|---|---|---|---|
+| The Arena (main page) | Questions by category and status, with prices or top answer shares | Shown when you open the prototype link | US-2 |
+| Question detail page | One question, where you put credits on an answer and see the crowd prediction | Click a card title, or click an answer on a card to open the question with that answer already selected | US-3, US-4 |
+| Sign-in page | Sign in with email and password | Click "Sign in," or try to put credits on an answer while signed out | US-1 |
+
 ---
 
 ## Table of Contents
@@ -137,7 +145,7 @@ Every account has exactly one role. Roles are cumulative: an Organizer can do ev
 1. The question list shows open questions by default, sorted by soonest deadline.
 2. Every question belongs to one category. Common categories, similar to those on prediction markets such as Kalshi, include Sports, Economics, Financials, Crypto, Weather & Climate, Politics, Culture & Entertainment, Tech & Science, Companies, and Campus Events. Administrators can add, rename, or remove categories.
 3. I can filter by one or more categories and by status (Open, Closing soon, Closed, Resolved, Cancelled).
-4. Each list item shows only the question title, category, and deadline (in Pacific Time). The list does not show the question type.
+4. Each list item shows the question title, category, deadline (in Pacific Time), total credits spent, and either the current prices (for example, "Dodgers 68 · Yankees 32") or the pool shares of the top three answers (for example, "Brazil 42% · France 25% · Argentina 18%").
 5. "Closing soon" means the deadline is within 24 hours.
 6. Hidden questions and drafts do not appear for Users or visitors.
 
