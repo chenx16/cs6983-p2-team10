@@ -43,7 +43,6 @@ From the repository root:
 
 ```bash
 cp .env.example apps/api/.env
-cp apps/web/.env.local.example apps/web/.env.local
 npm install
 docker compose up -d postgres
 npm run db:generate
