@@ -109,9 +109,24 @@ and whether administrators may predict at all. That decision should be
 resolved in the PRD before implementation rather than inferred from a UI
 mockup.
 
+After the before-and-after comparison, we added three rules to `AGENTS.md`:
+API routes must use Prisma, with in-memory stores allowed only in tests and
+seed scripts; every schema change must include a migration; and business-rule
+tests must be committed before the implementation. We also removed a setup
+step that referenced a file that does not exist. These changes are in the pull
+request for issue #21.
+
 ## Before-and-after comparison
 
-
+The full methodology, results table, and screenshots are in the before/after
+comparison section of our submission. In short, with `AGENTS.md` active the
+agent followed the PRD more closely: 5 of 20 test names cite PRD identifiers
+(versus 0 of 19), it implemented the CR-6 LMSR pricing rule correctly, and it
+added a privacy test for public responses. However, both runs still used
+in-memory seed data instead of PostgreSQL, created no migration, and wrote
+tests after the code. This showed us that a rules file improves alignment with
+written requirements but does not guarantee that every rule is followed; rules
+that must always hold need enforcement through CI checks or hooks.
 
 ## How Scrum on GitHub supports AI-assisted development
 
@@ -128,7 +143,7 @@ requests are especially important because they provide a controlled way to
 manage the Git source code. Each change can be reviewed as a diff before it
 enters the shared codebase, and conflicts can be identified and resolved on
 the feature branch instead of being discovered after changes have already
-been merged. Required checks and reviews help protect the `main` branch from
+been merged. Partner reviews and CI checks help protect the `main` branch from
 unfinished, conflicting, or untested work.
 
 This workflow also improved how work was distributed. Instead of both

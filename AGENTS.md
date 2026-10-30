@@ -151,6 +151,9 @@ accounting rules in route handlers and UI components.
   or correction behavior.
 - Keep the LMSR liquidity parameter, share precision, charge ceiling, payout
   rules, and display-price limits exactly as specified in the PRD.
+- Public and private API routes must read and write through Prisma. In-memory stores and seed data are allowed only in tests and in `prisma/seed.ts`.
+- Every change to `schema.prisma` must include a migration generated with `npm run db:migrate`.
+- For business rules (pricing, payouts, permissions, deadlines), commit the failing test before the implementation and state this in the pull request.
 
 ## PRD and design references
 
@@ -270,7 +273,6 @@ For local development:
 
 ```bash
 cp .env.example apps/api/.env
-cp apps/web/.env.local.example apps/web/.env.local
 npm install
 docker compose up -d postgres
 npm run db:generate
