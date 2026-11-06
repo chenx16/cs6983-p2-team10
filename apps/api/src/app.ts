@@ -11,7 +11,7 @@ const openApiDocument = {
     version: "0.1.0",
     description: "Versioned API foundation for the ForecastHub prediction platform.",
   },
-  servers: [{ url: "http://localhost:4000" }],
+  servers: [{ url: "/" }],
   paths: {
     "/api/v1/public/health": {
       get: {

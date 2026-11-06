@@ -51,9 +51,17 @@ npm run db:generate
 npm run dev
 ```
 
-The API starts on `http://localhost:4000`. The web app starts on `http://localhost:3000`. OpenAPI documentation is available at `http://localhost:4000/api/docs`.
+The API starts on `http://localhost:4000`. The web app starts on
+`http://localhost:3000`. The web app forwards `/api/*` requests to the API
+using `API_URL`, which defaults to `http://localhost:4000` for local
+development. OpenAPI documentation is available at
+`http://localhost:4000/api/docs`.
 
 The API currently requires a `JWT_SECRET` of at least 32 characters. The example environment file contains a local development value; use a separately generated secret outside local development.
+
+For the deployed Vercel web app, set `API_URL` to the deployed Render API URL.
+The Swagger UI uses a relative API server URL, so its “Try it out” requests
+work against whichever API host serves the documentation.
 
 ## Validation commands
 
