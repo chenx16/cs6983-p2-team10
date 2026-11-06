@@ -13,6 +13,29 @@ enum Role {
   ADMINISTRATOR
 }
 
+enum QuestionType {
+  AB
+  MULTI_ANSWER
+}
+
+enum QuestionStatus {
+  DRAFT
+  OPEN
+  CLOSED
+  RESOLVED
+  CANCELLED
+}
+
+enum LedgerType {
+  STARTING
+  WEEKLY
+  COUPON
+  PREDICTION
+  PAYOUT
+  REFUND
+  CORRECTION
+}
+
 model User {
   id           String   @id @default(cuid())
   username     String   @unique
@@ -20,27 +43,134 @@ model User {
   passwordHash String
   role         Role     @default(USER)
   balance      Int      @default(1000)
+  isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  transactions Transaction[]
+  organizedQuestions Question[]     @relation("QuestionOrganizer")
+  predictions        Prediction[]
+  ledgerEntries      CreditLedger[]
+  responsibleEntries CreditLedger[] @relation("LedgerResponsibleUser")
 }
 
 model Category {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  createdAt DateTime @default(now())
+  id        String     @id @default(cuid())
+  name      String     @unique
+  createdAt DateTime   @default(now())
+  questions Question[]
 }
 
-model Transaction {
-  id        String   @id @default(cuid())
-  userId    String
-  amount    Int
-  type      String
-  reason    String?
-  createdAt DateTime @default(now())
+model Question {
+  id              String         @id @default(cuid())
+  title           String
+  type            QuestionType
+  status          QuestionStatus @default(DRAFT)
+  categoryId      String
+  organizerId     String
+  deadline        DateTime
+  eventTime       DateTime
+  timeZone        String         @default("America/Los_Angeles")
+  outcomeCriteria String
+  source          String
+  startingPriceA  Int?
+  isHidden        Boolean        @default(false)
+  resolutionNote  String?
+  correctAnswerId String?        @unique
+  publishedAt     DateTime?
+  resolvedAt      DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
-  user User @relation(fields: [userId], references: [id])
+  category      Category        @relation(fields: [categoryId], references: [id])
+  organizer     User            @relation("QuestionOrganizer", fields: [organizerId], references: [id])
+  answers       Answer[]        @relation("QuestionAnswers")
+  correctAnswer Answer?         @relation("QuestionCorrectAnswer", fields: [correctAnswerId], references: [id])
+  predictions   Prediction[]
+  snapshots     PriceSnapshot[]
+
+  @@index([status, deadline])
+  @@index([categoryId, status])
+  @@index([organizerId, status])
+}
+
+model Answer {
+  id         String   @id @default(cuid())
+  questionId String
+  text       String
+  sortOrder  Int
+  isOther    Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  question       Question         @relation("QuestionAnswers", fields: [questionId], references: [id], onDelete: Cascade)
+  correctFor     Question?        @relation("QuestionCorrectAnswer")
+  predictions    Prediction[]
+  snapshotTotals AnswerSnapshot[]
+
+  @@unique([questionId, text])
+  @@unique([questionId, sortOrder])
+  @@index([questionId, sortOrder])
+}
+
+model Prediction {
+  id                  String   @id @default(cuid())
+  userId              String
+  questionId          String
+  answerId            String
+  creditsCharged      Int
+  shares              Decimal? @db.Decimal(20, 2)
+  priceAAtPurchase    Decimal? @db.Decimal(12, 8)
+  priceBAtPurchase    Decimal? @db.Decimal(12, 8)
+  poolTotalAtPurchase Int?
+  createdAt           DateTime @default(now())
+
+  user     User          @relation(fields: [userId], references: [id])
+  question Question      @relation(fields: [questionId], references: [id])
+  answer   Answer        @relation(fields: [answerId], references: [id])
+  ledger   CreditLedger?
+
+  @@index([questionId, createdAt])
+  @@index([userId, createdAt])
+  @@index([answerId, createdAt])
+}
+
+model CreditLedger {
+  id                String     @id @default(cuid())
+  userId            String
+  type              LedgerType
+  amount            Int
+  reason            String?
+  predictionId      String?    @unique
+  responsibleUserId String?
+  createdAt         DateTime   @default(now())
+
+  user            User        @relation(fields: [userId], references: [id])
+  prediction      Prediction? @relation(fields: [predictionId], references: [id])
+  responsibleUser User?       @relation("LedgerResponsibleUser", fields: [responsibleUserId], references: [id])
 
   @@index([userId, createdAt])
+}
+
+model PriceSnapshot {
+  id         String   @id @default(cuid())
+  questionId String
+  recordedAt DateTime @default(now())
+  priceA     Decimal? @db.Decimal(12, 8)
+  priceB     Decimal? @db.Decimal(12, 8)
+  poolTotal  Int      @default(0)
+
+  question Question         @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answers  AnswerSnapshot[]
+
+  @@index([questionId, recordedAt])
+}
+
+model AnswerSnapshot {
+  snapshotId   String
+  answerId     String
+  creditsTotal Int
+
+  snapshot PriceSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+  answer   Answer        @relation(fields: [answerId], references: [id])
+
+  @@id([snapshotId, answerId])
 }
