@@ -15,6 +15,9 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm install
+      - run: npm audit --audit-level=high
+        continue-on-error: true
+      - run: npm audit --audit-level=critical --omit=dev
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
@@ -24,6 +27,7 @@ jobs:
     name: Deploy web to Vercel
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: validate
+    environment: production
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -51,6 +55,7 @@ jobs:
     name: Deploy API to Render
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: validate
+    environment: production
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Render deployment
