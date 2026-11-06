@@ -1,6 +1,6 @@
 # ForecastHub
 
-[![CI](https://github.com/chenx16/cs6983-p2-team10/actions/workflows/ci.yml/badge.svg)](https://github.com/chenx16/cs6983/cs6983-p2-team10/actions/workflows/ci.yml)
+[![CI](https://github.com/chenx16/cs6983-p2-team10/actions/workflows/ci.yml/badge.svg)](https://github.com/chenx16/cs6983-p2-team10/actions/workflows/ci.yml)
 
 ForecastHub is a community prediction platform based on the requirements in [docs/PRD.md](docs/PRD.md). Credits are virtual only. The repository is being built as a TypeScript npm workspace with separate web and API applications.
 
