@@ -84,18 +84,38 @@ npm run db:migrate
 npm run db:seed
 ```
 
+## Environments
+
+ForecastHub uses separate local, preview, and production environments:
+
+- **Local:** Copy `.env.example` to `apps/api/.env`. Use the Docker Compose
+  PostgreSQL database and localhost URLs. Local secrets stay in ignored `.env`
+  files and are never committed.
+- **Preview:** Pull requests use Vercel Preview deployments. Configure
+  `API_URL`, `NEXT_PUBLIC_API_URL`, `DATABASE_URL`, `JWT_SECRET`, and
+  `WEB_ORIGIN` in the hosting provider's preview environment variables; do not
+  put preview secrets in GitHub or the repository.
+- **Production:** The `production` GitHub environment is used by both deploy
+  jobs after validation succeeds. Store `VERCEL_TOKEN`, `VERCEL_ORG_ID`,
+  `VERCEL_PROJECT_ID`, and `RENDER_DEPLOY_HOOK_URL` as production environment
+  secrets in GitHub. Store application values such as `DATABASE_URL`,
+  `JWT_SECRET`, `WEB_ORIGIN`, and `API_URL` in the Vercel and Render production
+  environment settings.
+
 ## CI and deployment
 
 Every pull request runs install, typecheck, lint, test, and build checks. A
 successful merge to `main` deploys the web app to Vercel and triggers the API
-deployment on Render.
+deployment on Render. Pull requests also run `npm audit --audit-level=high`
+and CodeQL analysis.
 
 Configure these GitHub Actions repository secrets before merging to `main`:
 
 - `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID` for the web app.
 - `RENDER_DEPLOY_HOOK_URL` for the API service.
 
-The deployment workflow reads these values only from GitHub Actions secrets.
+The deployment workflow reads these values only from the GitHub `production`
+environment secrets.
 Do not commit provider tokens, project identifiers that are secret, deploy
 hooks, or application environment values to the repository.
 
