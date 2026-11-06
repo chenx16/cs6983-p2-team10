@@ -19,6 +19,8 @@ type Question = {
   criteria: string;
 };
 
+const apiDocsUrl = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"}/api/docs/`;
+
 const questions: Question[] = [
   {
     id: "weather",
@@ -171,7 +173,7 @@ function AppShell({
         <nav aria-label="Primary navigation" className="nav-links">
           <button className={view === "arena" ? "active" : ""} onClick={() => onNavigate("arena")}><Icon>⌂</Icon> Arena</button>
           <button className={view === "leaderboard" ? "active" : ""} onClick={() => onNavigate("leaderboard")}><Icon>♜</Icon> Leaderboard</button>
-          <a href="/api/docs"><Icon>⌁</Icon> API docs</a>
+          <a href={apiDocsUrl}><Icon>⌁</Icon> API docs</a>
         </nav>
         <div className="sidebar-bottom">
           <p>Credits are virtual and free.</p>

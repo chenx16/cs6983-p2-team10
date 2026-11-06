@@ -59,7 +59,11 @@ development. OpenAPI documentation is available at
 
 The API currently requires a `JWT_SECRET` of at least 32 characters. The example environment file contains a local development value; use a separately generated secret outside local development.
 
-For the deployed Vercel web app, set `API_URL` to the deployed Render API URL.
+Set `NEXT_PUBLIC_API_URL` to the API base URL for the web app. It defaults to
+`http://localhost:4000` locally, and the API docs link uses
+`${NEXT_PUBLIC_API_URL}/api/docs/` directly so Swagger's trailing slash is
+preserved. For the deployed Vercel web app, set both `NEXT_PUBLIC_API_URL` and
+`API_URL` to the deployed Render API URL.
 The Swagger UI uses a relative API server URL, so its “Try it out” requests
 work against whichever API host serves the documentation.
 
