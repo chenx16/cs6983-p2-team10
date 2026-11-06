@@ -1,5 +1,7 @@
 # ForecastHub
 
+[![CI](https://github.com/chenx16/cs6983-p2-team10/actions/workflows/ci.yml/badge.svg)](https://github.com/chenx16/cs6983/cs6983-p2-team10/actions/workflows/ci.yml)
+
 ForecastHub is a community prediction platform based on the requirements in [docs/PRD.md](docs/PRD.md). Credits are virtual only. The repository is being built as a TypeScript npm workspace with separate web and API applications.
 
 ## Current status
@@ -69,6 +71,21 @@ npm run db:generate
 npm run db:migrate
 npm run db:seed
 ```
+
+## CI and deployment
+
+Every pull request runs install, typecheck, lint, test, and build checks. A
+successful merge to `main` deploys the web app to Vercel and triggers the API
+deployment on Render.
+
+Configure these GitHub Actions repository secrets before merging to `main`:
+
+- `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID` for the web app.
+- `RENDER_DEPLOY_HOOK_URL` for the API service.
+
+The deployment workflow reads these values only from GitHub Actions secrets.
+Do not commit provider tokens, project identifiers that are secret, deploy
+hooks, or application environment values to the repository.
 
 ## Repository layout
 
