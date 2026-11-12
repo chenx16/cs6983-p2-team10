@@ -46,6 +46,12 @@ virtual credits, follow changing crowd predictions, and compare forecasting
 results. Credits are never money, cannot be purchased or transferred, and must
 not be implemented as gambling or a cash-equivalent balance.
 
+### Release scope
+
+This release supports A/B questions only. Do not implement multi-answer
+questions, shared pools, coupon codes, weekly credits, private profile, balance
+history, or the prediction history chart unless an open issue requires it.
+
 ### Tech stack
 
 The project standard is to use the latest stable release of every supported
@@ -377,3 +383,9 @@ production code.
   do not present fixture data as production persistence.
 - Keep user-facing updates concise and include the files changed and checks
   actually run.
+
+## Revision notes
+
+- **November 11, 2026:** Documented Sprint 2 descoping for the A/B-only course
+  release. Deferred multi-answer questions, shared pools, coupon codes, weekly
+  credits, private profiles, balance history, and prediction history charts.

@@ -6,7 +6,7 @@ ForecastHub is a community prediction platform based on the requirements in [doc
 
 ## Current status
 
-The initial scaffold includes:
+The current release includes:
 
 - Next.js and Tailwind CSS web shell at `apps/web`
 - Express API at `apps/api`
@@ -15,8 +15,21 @@ The initial scaffold includes:
 - PostgreSQL and Prisma foundation
 - Shared Zod contracts in `packages/shared`
 - GitHub Actions validation workflow
+- Registration, sign-in, sign-out, and secure JWT cookie sessions
+- A/B-only release scope with rate-limited authentication routes
 
-Market accounting, authentication flows, WebSockets, scheduled credits, prediction workflows, and administration are intentionally not implemented yet.
+Question markets, WebSockets, prediction workflows, and administration are
+being delivered against the scoped A/B release issues. Multi-answer questions,
+shared pools, scheduled credits, coupon codes, private profiles, balance
+history, and prediction history charts are deferred; see
+[docs/sprints/sprint-2/descoping.md](docs/sprints/sprint-2/descoping.md).
+
+## Future work
+
+Deferred features remain tracked in the PRD and GitHub issues. The Prisma schema
+retains dormant multi-answer and ledger structures so future work does not
+require a risky course-timeline migration. Known dependency audit findings are
+documented in [issue #32](https://github.com/chenx16/cs6983-p2-team10/issues/32).
 
 ## Prerequisites
 
