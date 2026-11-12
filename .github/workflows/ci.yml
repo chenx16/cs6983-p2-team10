@@ -8,6 +8,25 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: forecasthub_test
+          POSTGRES_USER: forecasthub
+          POSTGRES_PASSWORD: forecasthub
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U forecasthub -d forecasthub_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL_TEST: postgresql://forecasthub:forecasthub@localhost:5432/forecasthub_test?schema=public
+      DATABASE_URL: postgresql://forecasthub:forecasthub@localhost:5432/forecasthub_test?schema=public
+      JWT_SECRET: ci-test-secret-that-is-at-least-32-characters
+      WEB_ORIGIN: http://localhost:3000
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -18,6 +37,8 @@ jobs:
       - run: npm audit --audit-level=high
         continue-on-error: true
       - run: npm audit --audit-level=critical --omit=dev
+      - run: npm run prisma:generate --workspace=@forecasthub/api
+      - run: npm exec --workspace=@forecasthub/api -- prisma migrate deploy
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test

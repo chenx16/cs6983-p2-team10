@@ -1,8 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { AuthPage } from "./auth-page";
+import { getCurrentUser, logout } from "./auth-client";
+import type { AuthUser } from "./auth-client";
 
 type View = "arena" | "leaderboard" | "profile" | "sign-in";
+type AuthMode = "register" | "login";
 type QuestionType = "A/B" | "Multi";
 type Status = "Open" | "Soon" | "Resolved";
 
@@ -95,6 +99,8 @@ const leaderboard = [
   { rank: 4, username: "signalhouse", scored: 28, success: "68%" },
 ];
 
+const roleLabel = (role: string) => role.charAt(0) + role.slice(1).toLowerCase();
+
 function Icon({ children }: { children: React.ReactNode }) {
   return <span aria-hidden="true" className="icon">{children}</span>;
 }
@@ -160,10 +166,16 @@ function QuestionCard({ question, onOpen }: { question: Question; onOpen: () => 
 function AppShell({
   view,
   onNavigate,
+  onAuthNavigate,
+  user,
+  onSignOut,
   children,
 }: {
   view: View;
   onNavigate: (view: View) => void;
+  onAuthNavigate: (mode: AuthMode) => void;
+  user: AuthUser | null;
+  onSignOut: () => void;
   children: React.ReactNode;
 }) {
   return (
@@ -177,8 +189,19 @@ function AppShell({
         </nav>
         <div className="sidebar-bottom">
           <p>Credits are virtual and free.</p>
-          <Button onClick={() => onNavigate("sign-in")}>Sign in</Button>
-          <Button primary onClick={() => onNavigate("sign-in")}>Register</Button>
+          {user ? (
+            <div className="user-card">
+              <strong>{user.username}</strong>
+              {user.role === "ADMINISTRATOR" && <span>{roleLabel(user.role)}</span>}
+              <span>{user.balance.toLocaleString()} credits</span>
+              <Button onClick={onSignOut}>Sign out</Button>
+            </div>
+          ) : (
+            <>
+              <Button onClick={() => onAuthNavigate("login")}>Sign in</Button>
+              <Button primary onClick={() => onAuthNavigate("register")}>Register</Button>
+            </>
+          )}
         </div>
       </aside>
       <div className="mobile-bar">
@@ -248,8 +271,8 @@ function Detail({ question, onBack, onSignIn }: { question: Question; onBack: ()
   );
 }
 
-function SignIn({ onBack }: { onBack: () => void }) {
-  return <div className="auth-view"><button className="brand auth-brand" onClick={onBack}><span className="brand-mark">↗</span> ForecastHub</button><form className="auth-card" onSubmit={(event) => event.preventDefault()}><h1>Sign in</h1><p className="muted">Make predictions, track your credits, and climb the leaderboard.</p><label className="field-label" htmlFor="email">Email address</label><input className="text-input" id="email" type="email" /><label className="field-label" htmlFor="password">Password</label><input className="text-input" id="password" type="password" /><Button primary type="submit">Sign in</Button><p className="auth-foot">New to ForecastHub? <button type="button">Create an account</button></p><p className="prototype-warning">Use your own account. Prototype credentials are not used in production.</p></form></div>;
+function SignIn({ mode, onBack }: { mode: AuthMode; onBack: () => void | Promise<void> }) {
+  return <AuthPage initialMode={mode} onAuthenticated={onBack} />;
 }
 
 function Leaderboard() {
@@ -258,14 +281,33 @@ function Leaderboard() {
 
 export default function HomePage() {
   const [view, setView] = useState<View>("arena");
+  const [authMode, setAuthMode] = useState<AuthMode>("login");
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
+  useEffect(() => {
+    void getCurrentUser().then(setUser);
+  }, []);
+  const handleAuthenticated = async () => {
+    setUser(await getCurrentUser());
+    setView("arena");
+  };
+  const handleSignOut = async () => {
+    await logout();
+    setUser(null);
+  };
   const openQuestion = (question: Question) => { setSelectedQuestion(question); setView("arena"); };
   const content = useMemo(() => {
-    if (view === "sign-in") return <SignIn onBack={() => setView("arena")} />;
+    if (view === "sign-in") return <SignIn mode={authMode} onBack={handleAuthenticated} />;
     if (view === "leaderboard") return <Leaderboard />;
     if (selectedQuestion) return <Detail onBack={() => setSelectedQuestion(null)} onSignIn={() => setView("sign-in")} question={selectedQuestion} />;
     return <Arena onOpen={openQuestion} />;
-  }, [selectedQuestion, view]);
+  }, [authMode, selectedQuestion, view]);
   if (view === "sign-in") return content;
-  return <AppShell onNavigate={(next) => { setSelectedQuestion(null); setView(next); }} view={view}>{content}</AppShell>;
+  return <AppShell
+    onAuthNavigate={(mode) => { setAuthMode(mode); setSelectedQuestion(null); setView("sign-in"); }}
+    onNavigate={(next) => { setSelectedQuestion(null); setView(next); }}
+    onSignOut={() => { void handleSignOut(); }}
+    user={user}
+    view={view}
+  >{content}</AppShell>;
 }
