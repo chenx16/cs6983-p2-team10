@@ -1,5 +1,6 @@
 import cors from "cors";
 import express, { type ErrorRequestHandler } from "express";
+import rateLimit from "express-rate-limit";
 import swaggerUi from "swagger-ui-express";
 import { healthResponseSchema, loginRequestSchema, registerRequestSchema } from "@forecasthub/shared";
 import { authenticateUser, clearAuthCookie, createAccessToken, publicUser, registerUser, requireAuth, setAuthCookie, type AuthenticatedRequest } from "./auth.js";
@@ -44,6 +45,24 @@ const openApiDocument = {
 
 export const createApp = () => {
   const app = express();
+  const authMutationRateLimit = rateLimit({
+    handler: (_request, response) => {
+      response.status(429).json({ error: { code: "RATE_LIMITED", message: "Too many authentication attempts. Try again later." } });
+    },
+    legacyHeaders: false,
+    max: 10,
+    standardHeaders: true,
+    windowMs: 15 * 60 * 1000,
+  });
+  const authSessionRateLimit = rateLimit({
+    handler: (_request, response) => {
+      response.status(429).json({ error: { code: "RATE_LIMITED", message: "Too many authentication requests. Try again later." } });
+    },
+    legacyHeaders: false,
+    max: 100,
+    standardHeaders: true,
+    windowMs: 15 * 60 * 1000,
+  });
   app.use(cors({ origin: env.WEB_ORIGIN, credentials: true }));
   app.use(express.json());
 
@@ -63,7 +82,7 @@ export const createApp = () => {
     }));
   });
 
-  app.post("/api/v1/auth/register", async (request, response, next) => {
+  app.post("/api/v1/auth/register", authMutationRateLimit, async (request, response, next) => {
     const parsed = registerRequestSchema.safeParse(request.body);
     if (!parsed.success) {
       response.status(400).json({ error: { code: "INVALID_INPUT", message: "Username, email, and password are invalid." } });
@@ -82,7 +101,7 @@ export const createApp = () => {
     }
   });
 
-  app.post("/api/v1/auth/login", async (request, response, next) => {
+  app.post("/api/v1/auth/login", authMutationRateLimit, async (request, response, next) => {
     const parsed = loginRequestSchema.safeParse(request.body);
     if (!parsed.success) {
       response.status(400).json({ error: { code: "INVALID_INPUT", message: "Username or email and password are invalid." } });
@@ -101,12 +120,12 @@ export const createApp = () => {
     }
   });
 
-  app.post("/api/v1/auth/logout", (_request, response) => {
+  app.post("/api/v1/auth/logout", authSessionRateLimit, (_request, response) => {
     clearAuthCookie(response);
     response.status(204).send();
   });
 
-  app.get("/api/v1/private/me", requireAuth, async (request: AuthenticatedRequest, response, next) => {
+  app.get("/api/v1/private/me", authSessionRateLimit, requireAuth, async (request: AuthenticatedRequest, response, next) => {
     try {
       if (!request.auth) {
         response.status(401).json({ error: { code: "UNAUTHENTICATED", message: "Authentication is required." } });
