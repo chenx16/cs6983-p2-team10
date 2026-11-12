@@ -186,4 +186,31 @@ describe("JWT authentication middleware", () => {
     expect(invalid.status).toBe(401);
     expect(expired.status).toBe(401);
   });
+
+  it("returns the authenticated user without password fields from /me", async () => {
+    const app = createApp();
+    const registration = await request(app).post("/api/v1/auth/register").send({
+      username: "me-user",
+      email: "me@example.com",
+      password: "correct horse battery staple",
+    });
+    const cookie = registration.headers["set-cookie"]?.[0];
+
+    const response = await request(app).get("/api/v1/private/me").set("Cookie", cookie);
+
+    expect(response.status).toBe(200);
+    expect(response.body.user).toMatchObject({
+      username: "me-user",
+      email: "me@example.com",
+      balance: 1000,
+    });
+    expect(response.body.user).not.toHaveProperty("password");
+    expect(response.body.user).not.toHaveProperty("passwordHash");
+  });
+
+  it("returns 401 from /me without a valid cookie", async () => {
+    const response = await request(createApp()).get("/api/v1/private/me");
+
+    expect(response.status).toBe(401);
+  });
 });

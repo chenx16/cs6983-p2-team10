@@ -12,5 +12,16 @@ describe("authentication page", () => {
     expect(markup).toContain('name="email"');
     expect(markup).toContain('name="password"');
     expect(markup).toContain("Sign in");
+    expect(markup).toContain("Already have an account?");
+    expect(markup).toContain("At least 8 characters");
+  });
+
+  it("can render the sign-in mode directly", () => {
+    const markup = renderToStaticMarkup(createElement(AuthPage, { initialMode: "login" }));
+
+    expect(markup).toContain("Welcome back");
+    expect(markup).not.toContain('name="username"');
+    expect(markup).toContain("New to ForecastHub?");
+    expect(markup).toContain("Create an account");
   });
 });

@@ -26,6 +26,32 @@ describe("authentication contracts", () => {
     })).toThrow();
   });
 
+  it("rejects passwords outside the 8-to-72-byte range", () => {
+    expect(() => registerRequestSchema.parse({
+      username: "forecastor",
+      email: "forecastor@example.com",
+      password: "short",
+    })).toThrow();
+    expect(() => registerRequestSchema.parse({
+      username: "forecastor",
+      email: "forecastor@example.com",
+      password: "a".repeat(73),
+    })).toThrow();
+  });
+
+  it("rejects a password equal to the username or email", () => {
+    expect(() => registerRequestSchema.parse({
+      username: "forecastor",
+      email: "forecastor@example.com",
+      password: "forecastor",
+    })).toThrow();
+    expect(() => registerRequestSchema.parse({
+      username: "forecastor",
+      email: "forecastor@example.com",
+      password: "forecastor@example.com",
+    })).toThrow();
+  });
+
   it("accepts login credentials", () => {
     expect(loginRequestSchema.parse({
       email: "forecastor@example.com",

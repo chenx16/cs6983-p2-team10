@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { login, register } from "./auth-client.js";
+import { getCurrentUser, login, logout, register } from "./auth-client.js";
 
 describe("same-origin authentication client", () => {
   it("posts registration through the Next rewrite", async () => {
@@ -31,6 +31,32 @@ describe("same-origin authentication client", () => {
     });
 
     expect(fetchMock).toHaveBeenCalledWith("/api/v1/auth/login", expect.objectContaining({
+      credentials: "include",
+      method: "POST",
+    }));
+    fetchMock.mockRestore();
+  });
+
+  it("loads the current session through the same-origin /me endpoint", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ user: { username: "existing-user" } }), { status: 200 }),
+    );
+
+    await getCurrentUser();
+
+    expect(fetchMock).toHaveBeenCalledWith("/api/v1/private/me", expect.objectContaining({
+      credentials: "include",
+      method: "GET",
+    }));
+    fetchMock.mockRestore();
+  });
+
+  it("signs out through the same-origin logout endpoint", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(null, { status: 204 }));
+
+    await logout();
+
+    expect(fetchMock).toHaveBeenCalledWith("/api/v1/auth/logout", expect.objectContaining({
       credentials: "include",
       method: "POST",
     }));
