@@ -2,12 +2,24 @@ import { randomBytes } from "node:crypto";
 import jwt from "jsonwebtoken";
 import { PrismaClient } from "@prisma/client";
 import request from "supertest";
-import { describe, expect, it } from "vitest";
+import { beforeEach, afterAll, describe, expect, it } from "vitest";
 
 process.env.JWT_SECRET = randomBytes(32).toString("hex");
+if (process.env.DATABASE_URL_TEST) {
+  process.env.DATABASE_URL = process.env.DATABASE_URL_TEST;
+}
 
 const { createApp } = await import("./app.js");
 const prisma = new PrismaClient();
+
+beforeEach(async () => {
+  await prisma.creditLedger.deleteMany();
+  await prisma.user.deleteMany();
+});
+
+afterAll(async () => {
+  await prisma.$disconnect();
+});
 
 describe("authentication routes", () => {
   it("registers the first account as an administrator with 1,000 credits", async () => {
@@ -20,8 +32,8 @@ describe("authentication routes", () => {
       });
 
     expect(response.status).toBe(201);
-    expect(response.headers["set-cookie"][0]).toContain("HttpOnly");
-    expect(response.headers["set-cookie"][0]).toContain("SameSite=Lax");
+    expect(response.headers["set-cookie"]?.[0]).toContain("HttpOnly");
+    expect(response.headers["set-cookie"]?.[0]).toContain("SameSite=Lax");
     expect(response.body.user).toMatchObject({
       username: "first-user",
       email: "first@example.com",
@@ -102,7 +114,7 @@ describe("authentication routes", () => {
 
     const success = await request(app).post("/api/v1/auth/login").send(credentials);
     expect(success.status).toBe(200);
-    expect(success.headers["set-cookie"][0]).toContain("HttpOnly");
+    expect(success.headers["set-cookie"]?.[0]).toContain("HttpOnly");
 
     const failure = await request(app).post("/api/v1/auth/login").send({
       ...credentials,
@@ -116,23 +128,33 @@ describe("authentication routes", () => {
     const response = await request(createApp()).post("/api/v1/auth/logout");
 
     expect(response.status).toBe(204);
-    expect(response.headers["set-cookie"][0]).toMatch(/Max-Age=0|Expires=/);
+    expect(response.headers["set-cookie"]?.[0]).toMatch(/Max-Age=0|Expires=/);
   });
 
   it("sets Secure on authentication cookies in production only", async () => {
     const originalNodeEnv = process.env.NODE_ENV;
     try {
       process.env.NODE_ENV = "production";
+      await request(createApp()).post("/api/v1/auth/register").send({
+        username: "production-user",
+        email: "production@example.com",
+        password: "correct horse battery staple",
+      });
       const productionResponse = await request(createApp())
         .post("/api/v1/auth/login")
         .send({ email: "production@example.com", password: "correct horse battery staple" });
-      expect(productionResponse.headers["set-cookie"][0]).toContain("Secure");
+      expect(productionResponse.headers["set-cookie"]?.[0]).toContain("Secure");
 
       process.env.NODE_ENV = "test";
+      await request(createApp()).post("/api/v1/auth/register").send({
+        username: "development-user",
+        email: "development@example.com",
+        password: "correct horse battery staple",
+      });
       const developmentResponse = await request(createApp())
         .post("/api/v1/auth/login")
         .send({ email: "development@example.com", password: "correct horse battery staple" });
-      expect(developmentResponse.headers["set-cookie"][0]).not.toContain("Secure");
+      expect(developmentResponse.headers["set-cookie"]?.[0]).not.toContain("Secure");
     } finally {
       if (originalNodeEnv === undefined) {
         delete process.env.NODE_ENV;
@@ -146,11 +168,17 @@ describe("authentication routes", () => {
 describe("JWT authentication middleware", () => {
   it("accepts a valid cookie token and rejects missing, invalid, and expired tokens", async () => {
     const app = createApp();
-    const token = jwt.sign({ userId: "user-1", role: "USER" }, process.env.JWT_SECRET!, { expiresIn: "7d" });
+    await request(app).post("/api/v1/auth/register").send({
+      username: "jwt-user",
+      email: "jwt@example.com",
+      password: "correct horse battery staple",
+    });
+    const user = await prisma.user.findUniqueOrThrow({ where: { email: "jwt@example.com" } });
+    const token = jwt.sign({ userId: user.id, role: user.role }, process.env.JWT_SECRET!, { expiresIn: "7d" });
     const valid = await request(app).get("/api/v1/private/me").set("Cookie", `access_token=${token}`);
     const missing = await request(app).get("/api/v1/private/me");
     const invalid = await request(app).get("/api/v1/private/me").set("Cookie", "access_token=not-a-jwt");
-    const expiredToken = jwt.sign({ userId: "user-1", role: "USER" }, process.env.JWT_SECRET!, { expiresIn: -1 });
+    const expiredToken = jwt.sign({ userId: user.id, role: user.role }, process.env.JWT_SECRET!, { expiresIn: -1 });
     const expired = await request(app).get("/api/v1/private/me").set("Cookie", `access_token=${expiredToken}`);
 
     expect(valid.status).toBe(200);
