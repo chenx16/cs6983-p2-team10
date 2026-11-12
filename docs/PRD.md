@@ -94,6 +94,28 @@ The following are intentionally out of scope.
 
 ---
 
+## Out of scope for this release
+
+The original user stories remain the product vision, but the following items
+are deferred beyond the course release. The release implements the complete A/B
+question flow instead. See
+[Sprint 2 descoping decisions](sprints/sprint-2/descoping.md) for the issue
+history and rationale.
+
+- Multi-answer questions and shared-pool predictions, pricing, and payouts
+- Weekly free credits and coupon codes
+- Crowd prediction history charts and chart text alternatives
+- Private profile pages, balance history, and private per-question results
+- Private WebSocket balance, payout, and notice updates
+- User removal, question hiding, resolution corrections, and category
+  management
+- Prisma and Next.js major-version upgrades for the known audit findings
+
+These are deferred rather than deleted from the PRD; future issues may restore
+them after the course timeline.
+
+---
+
 ## 3. Target Users and Roles
 
 ### 3.1 Target users
