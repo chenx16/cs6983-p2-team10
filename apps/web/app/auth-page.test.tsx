@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { AuthPage } from "./auth-page.js";
 
 describe("authentication page", () => {
   it("renders accessible registration and sign-in controls", () => {
-    const markup = renderToStaticMarkup(<AuthPage />);
+    const markup = renderToStaticMarkup(createElement(AuthPage));
 
     expect(markup).toContain("Create your account");
     expect(markup).toContain('name="username"');

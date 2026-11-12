@@ -126,6 +126,7 @@ th { color: var(--muted); font-size: .8125rem; }
 .auth-card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; display: grid; gap: 8px; max-width: 400px; padding: 28px; width: 100%; }
 .auth-card h1 { margin-bottom: 0; }
 .auth-card .button { margin-top: 8px; }
+.error-message { color: var(--no); font-size: .875rem; margin: 4px 0 0; }
 .auth-foot { color: var(--muted); font-size: .875rem; text-align: center; }
 .auth-foot button { background: none; border: 0; color: var(--accent); font-weight: 600; padding: 0; }
 .prototype-warning { color: var(--muted); font-size: .75rem; margin: 0; text-align: center; }

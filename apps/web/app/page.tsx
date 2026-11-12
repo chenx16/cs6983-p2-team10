@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { AuthPage } from "./auth-page";
 
 type View = "arena" | "leaderboard" | "profile" | "sign-in";
 type QuestionType = "A/B" | "Multi";
@@ -249,7 +250,7 @@ function Detail({ question, onBack, onSignIn }: { question: Question; onBack: ()
 }
 
 function SignIn({ onBack }: { onBack: () => void }) {
-  return <div className="auth-view"><button className="brand auth-brand" onClick={onBack}><span className="brand-mark">↗</span> ForecastHub</button><form className="auth-card" onSubmit={(event) => event.preventDefault()}><h1>Sign in</h1><p className="muted">Make predictions, track your credits, and climb the leaderboard.</p><label className="field-label" htmlFor="email">Email address</label><input className="text-input" id="email" type="email" /><label className="field-label" htmlFor="password">Password</label><input className="text-input" id="password" type="password" /><Button primary type="submit">Sign in</Button><p className="auth-foot">New to ForecastHub? <button type="button">Create an account</button></p><p className="prototype-warning">Use your own account. Prototype credentials are not used in production.</p></form></div>;
+  return <AuthPage onAuthenticated={onBack} />;
 }
 
 function Leaderboard() {
