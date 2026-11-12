@@ -24,24 +24,28 @@ end-to-end A/B prediction flow:
 
 ## Issue decisions
 
-The original estimates below are the estimates recorded in the issues before
-descoping. Savings are planning estimates, not a rewrite of the issue's
-recorded estimate.
+The estimates below are the current estimates recorded in the issues after
+descoping. Savings compare the earlier issue estimates with these current
+estimates.
 
-| Issue | Original estimate | Decision | Deferred or removed scope | Estimated points saved |
+| Issue | Current estimate | Decision | Deferred or removed scope | Estimated points saved |
 |---|---:|---|---|---:|
-| #5 | 5 | Narrowed | Multi-answer pool shares in the Arena; remove static multi-answer and chart placeholders when mock data is replaced | 0 |
-| #6 | 5 | Narrowed | Multi-answer question creation and publishing | 2 |
+| #5 | 3 | Narrowed | Multi-answer pool shares in the Arena; remove static multi-answer and chart placeholders when mock data is replaced | 2 |
+| #6 | 3 | Narrowed | Multi-answer question creation and publishing | 2 |
+| #7 | 3 | Retained | None; the LMSR engine remains A/B-only | 2 |
+| #8 | 5 | Retained | None; authenticated users can place A/B predictions | 0 |
+| #9 | 3 | Retained | None; the question detail flow remains A/B-only | 0 |
 | #10 | 3 | Closed | Multi-answer predictions and shared pools | 3 |
-| #11 | 5 | Narrowed | Crowd history chart, chart text alternative, and private balance/payout/notice pushes | 2 |
-| #12 | 5 | Narrowed | Multi-answer/shared-pool settlement, pool rounding, cancellation and refunds | 2 |
-| #13 | 3 | Narrowed | Private profile, balance history, and private per-question results | 2 |
+| #11 | 3 | Narrowed | Crowd history chart, chart text alternative, and private balance/payout/notice pushes | 2 |
+| #12 | 3 | Narrowed | Multi-answer/shared-pool settlement, pool rounding, cancellation and refunds | 2 |
+| #13 | 2 | Narrowed | Private profile, balance history, and private per-question results | 1 |
 | #14 | 3 | Closed | Weekly credits and coupon codes | 3 |
-| #15 | 5 | Narrowed | User removal, hiding, corrections, category management, and other moderation tools; retains cancellation and refunds | 3 |
-| #16 | 3 | Narrowed | Multi-answer, chart, weekly-credit, coupon, private-profile, and balance-history API surfaces | 1 |
-| #17 | 3 | Narrowed | Multi-answer, coupon, weekly-credit, profile, balance-history, and chart E2E assertions | 1 |
+| #15 | 3 | Narrowed | User removal, hiding, corrections, category management, and other moderation tools; retains cancellation and refunds | 2 |
+| #16 | 3 | Narrowed | Multi-answer, chart, weekly-credit, coupon, private-profile, and balance-history API surfaces | 0 |
+| #17 | 3 | Narrowed | Multi-answer, coupon, weekly-credit, profile, balance-history, and chart E2E assertions | 0 |
 | #18 | 2 | Closed/merged | Separate permission issue; rules moved into #6, #8, #9, #12, #15, and #16 | 2 |
 | #32 | — | Closed/deferred | Prisma and Next.js major-version audit upgrades remain future security work | — |
+| #48 | 1 | Documentation | Sprint 2 descoping decisions and release-scope guidance | 0 |
 
 Security scanning and preview deployment remain in scope and are recorded as
 complete in #17 (PRs #31 and #26). The separate preview and production
