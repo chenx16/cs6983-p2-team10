@@ -79,8 +79,10 @@ export const registerUser = async (input: { username: string; email: string; pas
   });
 };
 
-export const authenticateUser = async (email: string, password: string) => {
-  const user = await prisma.user.findUnique({ where: { email } });
+export const authenticateUser = async (identifier: string, password: string) => {
+  const user = await prisma.user.findFirst({
+    where: { OR: [{ email: identifier }, { username: identifier }] },
+  });
   if (!user || !user.isActive || !(await verifyPassword(password, user.passwordHash))) return null;
   return user;
 };

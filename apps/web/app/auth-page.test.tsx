@@ -13,7 +13,10 @@ describe("authentication page", () => {
     expect(markup).toContain('name="password"');
     expect(markup).toContain("Sign in");
     expect(markup).toContain("Already have an account?");
-    expect(markup).toContain("At least 8 characters");
+    expect(markup).toContain("At least one uppercase letter");
+    expect(markup).toContain('aria-label="Show password"');
+    expect(markup).toContain('aria-label="Password requirements"');
+    expect(markup).toContain("<svg");
   });
 
   it("can render the sign-in mode directly", () => {

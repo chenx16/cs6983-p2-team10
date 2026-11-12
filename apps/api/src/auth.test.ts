@@ -28,7 +28,7 @@ describe("authentication routes", () => {
       .send({
         username: "first-user",
         email: "first@example.com",
-        password: "correct horse battery staple",
+        password: "CorrectHorse1",
       });
 
     expect(response.status).toBe(201);
@@ -49,7 +49,7 @@ describe("authentication routes", () => {
     const registration = {
       username: "existing-user",
       email: "existing@example.com",
-      password: "correct horse battery staple",
+      password: "CorrectHorse1",
     };
 
     await request(app).post("/api/v1/auth/register").send(registration);
@@ -67,13 +67,13 @@ describe("authentication routes", () => {
     await request(app).post("/api/v1/auth/register").send({
       username: "same-username",
       email: "first-username@example.com",
-      password: "correct horse battery staple",
+      password: "CorrectHorse1",
     });
 
     const duplicate = await request(app).post("/api/v1/auth/register").send({
       username: "same-username",
       email: "second-username@example.com",
-      password: "correct horse battery staple",
+      password: "CorrectHorse1",
     });
 
     expect(duplicate.status).toBe(409);
@@ -82,7 +82,7 @@ describe("authentication routes", () => {
 
   it("stores a bcrypt password hash that matches the submitted password", async () => {
     const { default: bcrypt } = await import("bcrypt");
-    const password = "correct horse battery staple";
+    const password = "CorrectHorse1";
     await request(createApp()).post("/api/v1/auth/register").send({
       username: "hashed-password-user",
       email: "hashed-password@example.com",
@@ -103,12 +103,13 @@ describe("authentication routes", () => {
   it("logs in with valid credentials and rejects an incorrect password", async () => {
     const app = createApp();
     const credentials = {
-      email: "login@example.com",
-      password: "correct horse battery staple",
+      identifier: "login@example.com",
+      password: "CorrectHorse1",
     };
 
     await request(app).post("/api/v1/auth/register").send({
-      ...credentials,
+      email: "login@example.com",
+      password: credentials.password,
       username: "login-user",
     });
 
@@ -116,8 +117,14 @@ describe("authentication routes", () => {
     expect(success.status).toBe(200);
     expect(success.headers["set-cookie"]?.[0]).toContain("HttpOnly");
 
+    const usernameLogin = await request(app).post("/api/v1/auth/login").send({
+      identifier: "login-user",
+      password: credentials.password,
+    });
+    expect(usernameLogin.status).toBe(200);
+
     const failure = await request(app).post("/api/v1/auth/login").send({
-      ...credentials,
+      identifier: credentials.identifier,
       password: "wrong password",
     });
     expect(failure.status).toBe(401);
@@ -138,22 +145,22 @@ describe("authentication routes", () => {
       await request(createApp()).post("/api/v1/auth/register").send({
         username: "production-user",
         email: "production@example.com",
-        password: "correct horse battery staple",
+        password: "CorrectHorse1",
       });
       const productionResponse = await request(createApp())
         .post("/api/v1/auth/login")
-        .send({ email: "production@example.com", password: "correct horse battery staple" });
+        .send({ identifier: "production@example.com", password: "CorrectHorse1" });
       expect(productionResponse.headers["set-cookie"]?.[0]).toContain("Secure");
 
       process.env.NODE_ENV = "test";
       await request(createApp()).post("/api/v1/auth/register").send({
         username: "development-user",
         email: "development@example.com",
-        password: "correct horse battery staple",
+        password: "CorrectHorse1",
       });
       const developmentResponse = await request(createApp())
         .post("/api/v1/auth/login")
-        .send({ email: "development@example.com", password: "correct horse battery staple" });
+        .send({ identifier: "development@example.com", password: "CorrectHorse1" });
       expect(developmentResponse.headers["set-cookie"]?.[0]).not.toContain("Secure");
     } finally {
       if (originalNodeEnv === undefined) {
@@ -171,7 +178,7 @@ describe("JWT authentication middleware", () => {
     await request(app).post("/api/v1/auth/register").send({
       username: "jwt-user",
       email: "jwt@example.com",
-      password: "correct horse battery staple",
+      password: "CorrectHorse1",
     });
     const user = await prisma.user.findUniqueOrThrow({ where: { email: "jwt@example.com" } });
     const token = jwt.sign({ userId: user.id, role: user.role }, process.env.JWT_SECRET!, { expiresIn: "7d" });
@@ -192,11 +199,11 @@ describe("JWT authentication middleware", () => {
     const registration = await request(app).post("/api/v1/auth/register").send({
       username: "me-user",
       email: "me@example.com",
-      password: "correct horse battery staple",
+      password: "CorrectHorse1",
     });
     const cookie = registration.headers["set-cookie"]?.[0];
 
-    const response = await request(app).get("/api/v1/private/me").set("Cookie", cookie);
+    const response = await request(app).get("/api/v1/private/me").set("Cookie", cookie!);
 
     expect(response.status).toBe(200);
     expect(response.body.user).toMatchObject({

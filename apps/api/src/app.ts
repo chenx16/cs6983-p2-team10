@@ -85,13 +85,13 @@ export const createApp = () => {
   app.post("/api/v1/auth/login", async (request, response, next) => {
     const parsed = loginRequestSchema.safeParse(request.body);
     if (!parsed.success) {
-      response.status(400).json({ error: { code: "INVALID_INPUT", message: "Email and password are invalid." } });
+      response.status(400).json({ error: { code: "INVALID_INPUT", message: "Username or email and password are invalid." } });
       return;
     }
     try {
-      const user = await authenticateUser(parsed.data.email, parsed.data.password);
+      const user = await authenticateUser(parsed.data.identifier, parsed.data.password);
       if (!user) {
-        response.status(401).json({ error: { code: "INVALID_CREDENTIALS", message: "Email or password is incorrect." } });
+        response.status(401).json({ error: { code: "INVALID_CREDENTIALS", message: "Username/email or password is incorrect." } });
         return;
       }
       setAuthCookie(response, createAccessToken({ userId: user.id, role: user.role }));

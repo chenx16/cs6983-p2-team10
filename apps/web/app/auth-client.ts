@@ -1,10 +1,12 @@
 type AuthCredentials = {
-  email: string;
+  identifier: string;
   password: string;
 };
 
-type Registration = AuthCredentials & {
+type Registration = {
   username: string;
+  email: string;
+  password: string;
 };
 
 type AuthResponse = {
@@ -16,6 +18,8 @@ type AuthResponse = {
     balance: number;
   };
 };
+
+export type AuthUser = AuthResponse["user"];
 
 const requestAuth = async <T extends object>(path: string, body: object): Promise<T> => {
   const response = await fetch(path, {
@@ -39,6 +43,22 @@ export const register = (input: Registration) =>
 
 export const login = (input: AuthCredentials) =>
   requestAuth<AuthResponse>("/api/v1/auth/login", input);
+
+export const getCurrentUser = async (): Promise<AuthUser | null> => {
+  const response = await fetch("/api/v1/private/me", {
+    credentials: "include",
+    method: "GET",
+  });
+  if (response.status === 401) return null;
+  const payload = await response.json() as AuthResponse | { error?: { message?: string } };
+  if (!response.ok) {
+    const message = "error" in payload && payload.error?.message
+      ? payload.error.message
+      : "Unable to restore the current session.";
+    throw new Error(message);
+  }
+  return (payload as AuthResponse).user;
+};
 
 export const logout = async () => {
   const response = await fetch("/api/v1/auth/logout", {

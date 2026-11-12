@@ -10,7 +10,7 @@ describe("same-origin authentication client", () => {
     await register({
       username: "new-user",
       email: "new@example.com",
-      password: "correct horse battery staple",
+      password: "CorrectHorse1",
     });
 
     expect(fetchMock).toHaveBeenCalledWith("/api/v1/auth/register", expect.objectContaining({
@@ -26,8 +26,8 @@ describe("same-origin authentication client", () => {
     );
 
     await login({
-      email: "existing@example.com",
-      password: "correct horse battery staple",
+      identifier: "existing@example.com",
+      password: "CorrectHorse1",
     });
 
     expect(fetchMock).toHaveBeenCalledWith("/api/v1/auth/login", expect.objectContaining({

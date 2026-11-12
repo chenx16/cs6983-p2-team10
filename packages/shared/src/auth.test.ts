@@ -10,11 +10,11 @@ describe("authentication contracts", () => {
     expect(registerRequestSchema.parse({
       username: "forecastor",
       email: "forecastor@example.com",
-      password: "correct horse battery staple",
+      password: "CorrectHorse1",
     })).toEqual({
       username: "forecastor",
       email: "forecastor@example.com",
-      password: "correct horse battery staple",
+      password: "CorrectHorse1",
     });
   });
 
@@ -26,7 +26,7 @@ describe("authentication contracts", () => {
     })).toThrow();
   });
 
-  it("rejects passwords outside the 8-to-72-byte range", () => {
+  it("requires at least 8 characters with letters and numbers", () => {
     expect(() => registerRequestSchema.parse({
       username: "forecastor",
       email: "forecastor@example.com",
@@ -35,7 +35,12 @@ describe("authentication contracts", () => {
     expect(() => registerRequestSchema.parse({
       username: "forecastor",
       email: "forecastor@example.com",
-      password: "a".repeat(73),
+      password: "abcdefgh",
+    })).toThrow();
+    expect(() => registerRequestSchema.parse({
+      username: "forecastor",
+      email: "forecastor@example.com",
+      password: "12345678",
     })).toThrow();
   });
 
@@ -54,11 +59,11 @@ describe("authentication contracts", () => {
 
   it("accepts login credentials", () => {
     expect(loginRequestSchema.parse({
-      email: "forecastor@example.com",
-      password: "correct horse battery staple",
+      identifier: "forecastor",
+      password: "CorrectHorse1",
     })).toEqual({
-      email: "forecastor@example.com",
-      password: "correct horse battery staple",
+      identifier: "forecastor",
+      password: "CorrectHorse1",
     });
   });
 
