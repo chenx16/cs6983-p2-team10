@@ -7,9 +7,10 @@ import type { AuthUser } from "./auth-client";
 import { AppShell, type AuthMode, type View } from "./app-shell";
 import { AdminPage } from "./admin-page";
 import { OrganizerPage } from "./organizer-page";
+import { arenaQuestionsResponseSchema } from "@forecasthub/shared";
 
 type QuestionType = "A/B" | "Multi";
-type Status = "Open" | "Soon" | "Resolved";
+type Status = "Open";
 
 type Question = {
   id: string;
@@ -23,73 +24,6 @@ type Question = {
   source: string;
   criteria: string;
 };
-
-const questions: Question[] = [
-  {
-    id: "weather",
-    title: "Will it rain in Boston this weekend?",
-    category: "Everyday",
-    deadline: "Sat, Nov 1 · 8:00 AM PT",
-    status: "Open",
-    type: "A/B",
-    total: 1240,
-    answers: [
-      { label: "Yes", value: 62, color: "yes" },
-      { label: "No", value: 38, color: "no" },
-    ],
-    source: "National Weather Service forecast",
-    criteria: "Rainfall of at least 0.01 inches in Boston on Saturday or Sunday.",
-  },
-  {
-    id: "world-series",
-    title: "Who will win the 2026 World Series?",
-    category: "Sports",
-    deadline: "Tue, Oct 27 · 5:00 PM PT",
-    status: "Soon",
-    type: "Multi",
-    total: 4820,
-    answers: [
-      { label: "Los Angeles Dodgers", value: 44 },
-      { label: "New York Yankees", value: 27 },
-      { label: "Atlanta Braves", value: 16 },
-      { label: "Other", value: 13 },
-    ],
-    source: "MLB official results",
-    criteria: "The team that wins the 2026 World Series championship.",
-  },
-  {
-    id: "gas",
-    title: "Will California gas average above $6.00?",
-    category: "Economy",
-    deadline: "Mon, Dec 1 · 9:00 AM PT",
-    status: "Open",
-    type: "A/B",
-    total: 860,
-    answers: [
-      { label: "Above $6.00", value: 31, color: "yes" },
-      { label: "$6.00 or below", value: 69, color: "no" },
-    ],
-    source: "AAA Fuel Prices",
-    criteria: "The statewide regular gasoline average published by AAA is above $6.00.",
-  },
-  {
-    id: "panel",
-    title: "How many people will attend the industry panel?",
-    category: "Campus",
-    deadline: "Mon, Nov 10 · 12:00 PM PT",
-    status: "Resolved",
-    type: "Multi",
-    total: 2100,
-    answers: [
-      { label: "Under 50", value: 12 },
-      { label: "50–100", value: 38 },
-      { label: "101–150", value: 36 },
-      { label: "Over 150", value: 14 },
-    ],
-    source: "Event check-in count",
-    criteria: "The final check-in count recorded by the event organizer.",
-  },
-];
 
 const leaderboard = [
   { rank: 1, username: "forecastfox", scored: 42, success: "78%" },
@@ -125,10 +59,9 @@ function Button({
 function QuestionCard({ question, onOpen }: { question: Question; onOpen: () => void }) {
   const firstAnswer = question.answers[0];
   return (
-    <article className={`question-card ${question.status === "Resolved" ? "question-card-past" : ""}`}>
+    <article className="question-card">
       <div className="card-meta">
         <span><Icon>◈</Icon> {question.category}</span>
-        {question.status === "Soon" && <span className="hot">● Closing soon</span>}
         <span className="tag">{question.status}</span>
       </div>
       <button className="question-title" onClick={onOpen}>{question.title}</button>
@@ -161,26 +94,57 @@ function QuestionCard({ question, onOpen }: { question: Question; onOpen: () => 
 }
 
 function Arena({ onOpen }: { onOpen: (question: Question) => void }) {
-  const [status, setStatus] = useState<"All" | Status>("All");
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [category, setCategory] = useState("All topics");
-  const filtered = questions.filter((question) => (status === "All" || question.status === status) && (category === "All topics" || question.category === category));
+  useEffect(() => {
+    let active = true;
+    void fetch("/api/v1/public/questions", { credentials: "include" })
+      .then(async (response) => {
+        const payload: unknown = await response.json();
+        if (!response.ok) throw new Error("Unable to load Arena questions.");
+        return arenaQuestionsResponseSchema.parse(payload);
+      })
+      .then((payload) => {
+        if (!active) return;
+        setQuestions(payload.questions.map((question) => ({
+          id: question.id,
+          title: question.title,
+          category: question.category,
+          deadline: new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", dateStyle: "medium", timeStyle: "short" }).format(new Date(question.deadline)) + " PT",
+          status: "Open",
+          type: "A/B",
+          total: question.totalCreditsSpent,
+          answers: question.answers.map((answer, index) => ({ label: answer.text, value: answer.price, color: index === 0 ? "yes" : "no" })),
+          source: question.source,
+          criteria: question.outcomeCriteria,
+        })));
+      })
+      .catch((requestError: unknown) => {
+        if (active) setError(requestError instanceof Error ? requestError.message : "Unable to load Arena questions.");
+      })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, []);
+  const categories = ["All topics", ...new Set(questions.map((question) => question.category))];
+  const filtered = questions.filter((question) => category === "All topics" || question.category === category);
 
   return (
     <>
       <div className="breadcrumbs">ForecastHub <span>›</span> <b>Open</b></div>
       <div className="page-heading">
-        <div><p className="eyebrow">The Arena</p><h1>Questions worth thinking about.</h1></div>
-        <div className="status-filters" aria-label="Question status">
-          {(["All", "Open", "Soon", "Resolved"] as const).map((value) => <button aria-pressed={status === value} key={value} onClick={() => setStatus(value)}>{value}</button>)}
-        </div>
+        <div><p className="eyebrow">The Arena</p><h1>Questions worth thinking about.</h1><p className="muted">Published questions still open for predictions.</p></div>
       </div>
       <div className="topic-tabs" aria-label="Question topics">
-        {["All topics", "Sports", "Everyday", "Economy", "Campus"].map((value) => <button aria-pressed={category === value} key={value} onClick={() => setCategory(value)}>{value}</button>)}
+        {categories.map((value) => <button aria-pressed={category === value} key={value} onClick={() => setCategory(value)}>{value}</button>)}
       </div>
-      <div className="question-grid">
+      {loading && <p role="status">Loading published questions…</p>}
+      {error && <p className="error-message" role="alert">{error}</p>}
+      {!loading && !error && <div className="question-grid">
         {filtered.map((question) => <QuestionCard key={question.id} onOpen={() => onOpen(question)} question={question} />)}
-      </div>
-      {filtered.length === 0 && <div className="empty-state"><strong>No questions here yet.</strong><span>Try another topic or status.</span></div>}
+      </div>}
+      {!loading && !error && filtered.length === 0 && <div className="empty-state"><strong>No open questions here yet.</strong><span>Published questions appear after their deadline is set in the future.</span></div>}
       <p className="privacy-note">All times are Pacific Time. Credits are virtual only and cannot be bought, sold, or exchanged for money.</p>
     </>
   );
@@ -210,7 +174,7 @@ function Detail({ question, onBack, onSignIn }: { question: Question; onBack: ()
           <div className="amount-input"><input id="amount" min="1" onChange={(event) => setAmount(event.target.value)} type="number" value={amount} /><span>credits</span></div>
           <div className="quick-amounts">{["25", "100", "250"].map((value) => <button key={value} onClick={() => setAmount(value)}>{value}</button>)}</div>
           {preview && <div className="preview-box" role="status"><strong>Preview prepared</strong><span>{amount} credits on {selected}. The server will confirm the final charge and outcome.</span></div>}
-          {question.status === "Resolved" ? <p className="closed">This question is closed.</p> : <Button primary onClick={() => { setPreview(true); onSignIn(); }}>Sign in to predict</Button>}
+          <Button primary onClick={() => { setPreview(true); onSignIn(); }}>Sign in to predict</Button>
           <p className="fine-print">Predictions are timestamped and cannot be changed or withdrawn.</p>
         </aside>
       </div>

@@ -79,6 +79,36 @@ const registerOtherUser = async (app: ReturnType<typeof createApp>) => {
 };
 
 describe("question detail APIs", () => {
+  it("lists only published, visible, open questions whose deadlines have not passed", async () => {
+    const scenario = await createScenario();
+    await prisma.question.create({
+      data: {
+        title: "Expired question",
+        type: QuestionType.AB,
+        status: QuestionStatus.OPEN,
+        categoryId: scenario.question.categoryId,
+        organizerId: scenario.user.id,
+        deadline: new Date("2020-01-01T00:00:00Z"),
+        eventTime: new Date("2020-01-01T01:00:00Z"),
+        outcomeCriteria: "Expired criteria",
+        source: "Expired source",
+        startingPriceA: 50,
+        publishedAt: new Date("2019-01-01T00:00:00Z"),
+        answers: { create: [{ text: "Yes", sortOrder: 0 }, { text: "No", sortOrder: 1 }] },
+      },
+    });
+
+    const response = await request(scenario.app).get("/api/v1/public/questions");
+
+    expect(response.status).toBe(200);
+    expect(response.body.questions).toHaveLength(1);
+    expect(response.body.questions[0]).toMatchObject({
+      id: scenario.question.id,
+      status: "OPEN",
+      title: scenario.question.title,
+    });
+  });
+
   it("returns public A/B question aggregates without individual prediction data", async () => {
     const scenario = await createScenario();
     const other = await registerOtherUser(scenario.app);
