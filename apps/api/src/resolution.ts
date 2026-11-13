@@ -17,7 +17,7 @@ export const listReadyToResolve = (organizerId: string) =>
     where: {
       organizerId,
       type: QuestionType.AB,
-      status: { in: [QuestionStatus.OPEN, QuestionStatus.CLOSED] },
+      status: { in: [QuestionStatus.OPEN, QuestionStatus.CLOSED], not: QuestionStatus.RESOLVED },
       deadline: { lte: new Date() },
     },
     orderBy: { deadline: "asc" },

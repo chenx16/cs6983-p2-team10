@@ -72,6 +72,12 @@ describe("A/B resolution", () => {
     expect(resolved.status).toBe(200);
     expect(resolved.body.question.status).toBe(QuestionStatus.RESOLVED);
 
+    const readyAfterResolution = await request(app)
+      .get("/api/v1/private/organizer/questions/ready-to-resolve")
+      .set("Cookie", cookie);
+    expect(readyAfterResolution.status).toBe(200);
+    expect(readyAfterResolution.body.questions).toHaveLength(0);
+
     await expect(prisma.user.findUniqueOrThrow({ where: { id: participant.id } })).resolves.toMatchObject({ balance: 1050 });
     await expect(prisma.creditLedger.findUnique({ where: { predictionId: prediction.id } })).resolves.toMatchObject({ type: "PAYOUT", amount: 250 });
     const duplicate = await request(app)
