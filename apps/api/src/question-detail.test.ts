@@ -23,7 +23,7 @@ afterAll(async () => {
 const createScenario = async () => {
   const app = createApp();
   const registration = await request(app).post("/api/v1/auth/register").send({
-    username: "question-owner",
+    username: "questionowner",
     email: "question-owner@example.com",
     password: "CorrectHorse1",
   });
@@ -67,7 +67,7 @@ const createScenario = async () => {
 
 const registerOtherUser = async (app: ReturnType<typeof createApp>) => {
   const response = await request(app).post("/api/v1/auth/register").send({
-    username: "other-detail-user",
+    username: "otherdetailuser",
     email: "other-detail-user@example.com",
     password: "CorrectHorse1",
   });

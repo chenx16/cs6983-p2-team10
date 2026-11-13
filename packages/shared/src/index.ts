@@ -18,8 +18,13 @@ export const healthResponseSchema = z.object({
 });
 export type HealthResponse = z.infer<typeof healthResponseSchema>;
 
+export const usernameSchema = z.string().trim()
+  .min(2, "Username must be at least 2 characters.")
+  .max(40, "Username must be at most 40 characters.")
+  .regex(/^[A-Za-z0-9]+$/, "Username must contain only English letters and numbers.");
+
 export const registerRequestSchema = z.object({
-  username: z.string().trim().min(2).max(40),
+  username: usernameSchema,
   email: z.string().trim().email(),
   password: z.string().min(8).regex(/[A-Z]/, "Password must include an uppercase letter.").regex(/[a-z]/, "Password must include a lowercase letter.").regex(/[0-9]/, "Password must include a number."),
 }).superRefine((input, context) => {
