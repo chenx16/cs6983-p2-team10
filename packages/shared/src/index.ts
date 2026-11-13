@@ -74,6 +74,37 @@ export const predictionPreviewResponseSchema = z.object({
 });
 export type PredictionPreviewResponse = z.infer<typeof predictionPreviewResponseSchema>;
 
+export const questionDetailResponseSchema = z.object({
+  id: z.string().min(1),
+  title: z.string(),
+  category: z.string(),
+  status: z.string(),
+  deadline: z.string().datetime(),
+  eventTime: z.string().datetime(),
+  outcomeCriteria: z.string(),
+  source: z.string(),
+  totalCreditsSpent: z.number().int().nonnegative(),
+  answers: z.array(z.object({
+    id: z.string().min(1),
+    text: z.string(),
+    price: z.number().int().min(1).max(99),
+    creditsSpent: z.number().int().nonnegative(),
+  })).length(2),
+});
+export type QuestionDetailResponse = z.infer<typeof questionDetailResponseSchema>;
+
+export const myQuestionPredictionsResponseSchema = z.object({
+  predictions: z.array(z.object({
+    answerId: z.string().min(1),
+    answerText: z.string(),
+    creditsCharged: z.number().int().nonnegative(),
+    shares: z.number().int().nonnegative(),
+    payoutIfCorrect: z.number().int().nonnegative(),
+    createdAt: z.string().datetime(),
+  })),
+});
+export type MyQuestionPredictionsResponse = z.infer<typeof myQuestionPredictionsResponseSchema>;
+
 export {
   calculateCost,
   calculatePrices,

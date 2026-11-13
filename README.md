@@ -148,10 +148,11 @@ hooks, or application environment values to the repository.
 
 ## Known limitations
 
-The pre-authentication IP rate limit on prediction routes is a safety net,
-defaulting to 600 requests per minute and configurable with
+The public question-detail IP limit and pre-authentication IP limit on
+prediction routes are safety nets, each defaulting to 600 requests per minute.
+They can be configured with `PUBLIC_QUESTION_DETAIL_RATE_LIMIT` and
 `PREDICTION_PREAUTH_RATE_LIMIT`. Behind Vercel and Render proxies, multiple
-users may share the same apparent IP address, so the limit is deliberately
+users may share the same apparent IP address, so these limits are deliberately
 generous. Accurate IP-based rate limiting depends on a safe `trust proxy`
 configuration tracked in [issue #16](https://github.com/chenx16/cs6983-p2-team10/issues/16).
 
