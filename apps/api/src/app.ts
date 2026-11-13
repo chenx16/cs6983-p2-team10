@@ -327,8 +327,13 @@ export const createApp = () => {
 
   app.post("/api/v1/private/organizer/questions", requireAuth, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
     const parsed = abQuestionRequestSchema.safeParse(request.body);
-    if (!parsed.success || !request.auth) {
-      response.status(400).json({ error: { code: "INVALID_INPUT", message: "A/B question details are invalid." } });
+    if (!parsed.success) {
+      const message = parsed.error.issues.map((issue) => issue.message).join(" ");
+      response.status(400).json({ error: { code: "INVALID_INPUT", message } });
+      return;
+    }
+    if (!request.auth) {
+      response.status(401).json({ error: { code: "UNAUTHENTICATED", message: "Authentication is required." } });
       return;
     }
     try {
@@ -345,8 +350,13 @@ export const createApp = () => {
 
   app.patch("/api/v1/private/organizer/questions/:questionId", requireAuth, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
     const parsed = abQuestionRequestSchema.safeParse(request.body);
-    if (!parsed.success || !request.auth) {
-      response.status(400).json({ error: { code: "INVALID_INPUT", message: "A/B question details are invalid." } });
+    if (!parsed.success) {
+      const message = parsed.error.issues.map((issue) => issue.message).join(" ");
+      response.status(400).json({ error: { code: "INVALID_INPUT", message } });
+      return;
+    }
+    if (!request.auth) {
+      response.status(401).json({ error: { code: "UNAUTHENTICATED", message: "Authentication is required." } });
       return;
     }
     try {

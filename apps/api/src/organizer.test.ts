@@ -77,6 +77,8 @@ describe("organizer question workflow", () => {
       .set("Cookie", adminCookie)
       .send(input({ categoryId: category.id, answerB: "yes", startingPriceA: 91 }));
     expect(invalid.status).toBe(400);
+    expect(invalid.body.error.message).toContain("Answers must be unique.");
+    expect(invalid.body.error.message).toContain("expected number to be <=90");
   });
 
   it("can edit drafts but finalizes only after the deadline", async () => {
