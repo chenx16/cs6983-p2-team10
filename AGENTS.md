@@ -159,6 +159,7 @@ accounting rules in route handlers and UI components.
   rules, and display-price limits exactly as specified in the PRD.
 - Public and private API routes must read and write through Prisma. In-memory stores and seed data are allowed only in tests and in `prisma/seed.ts`.
 - Every change to `schema.prisma` must include a migration generated with `npm run db:migrate`.
+- Never auto-confirm Prisma or database prompts (`yes |`, `printf 'y'`, or `--force`) against non-local databases. If a command requires confirmation, stop and ask the user.
 - For business rules (pricing, payouts, permissions, deadlines), commit the failing test before the implementation and state this in the pull request.
 
 ## PRD and design references

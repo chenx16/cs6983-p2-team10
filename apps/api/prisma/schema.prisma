@@ -73,6 +73,9 @@ model Question {
   outcomeCriteria String
   source          String
   startingPriceA  Int?
+  aSharesHundredths Int            @default(0)
+  bSharesHundredths Int            @default(0)
+  marketVersion     Int            @default(0)
   isHidden        Boolean        @default(false)
   resolutionNote  String?
   correctAnswerId String?        @unique
@@ -121,7 +124,8 @@ model Prediction {
   priceAAtPurchase    Decimal? @db.Decimal(12, 8)
   priceBAtPurchase    Decimal? @db.Decimal(12, 8)
   poolTotalAtPurchase Int?
-  createdAt           DateTime @default(now())
+  idempotencyKey      String?
+  createdAt           DateTime   @default(now())
 
   user     User          @relation(fields: [userId], references: [id])
   question Question      @relation(fields: [questionId], references: [id])
@@ -131,6 +135,7 @@ model Prediction {
   @@index([questionId, createdAt])
   @@index([userId, createdAt])
   @@index([answerId, createdAt])
+  @@unique([userId, idempotencyKey])
 }
 
 model CreditLedger {

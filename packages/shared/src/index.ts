@@ -44,6 +44,36 @@ export const authUserResponseSchema = z.object({
 });
 export type AuthUserResponse = z.infer<typeof authUserResponseSchema>;
 
+export const predictionPreviewRequestSchema = z.object({
+  answerId: z.string().trim().min(1),
+  budget: z.number().int().min(10),
+});
+export type PredictionPreviewRequest = z.infer<typeof predictionPreviewRequestSchema>;
+
+export const placePredictionRequestSchema = z.object({
+  answerId: z.string().trim().min(1),
+  budget: z.number().int().min(10),
+  minShares: z.number().int().nonnegative(),
+  idempotencyKey: z.string().trim().min(1).max(255),
+});
+export type PlacePredictionRequest = z.infer<typeof placePredictionRequestSchema>;
+
+export const predictionPreviewResponseSchema = z.object({
+  questionId: z.string().min(1),
+  answerId: z.string().min(1),
+  shares: z.number().int().nonnegative(),
+  charge: z.number().int().min(10),
+  averagePrice: z.number().nonnegative(),
+  prices: z.object({
+    a: z.number().int().min(1).max(99),
+    b: z.number().int().min(1).max(99),
+  }),
+  payoutIfCorrect: z.number().int().nonnegative(),
+  balance: z.number().int(),
+  marketVersion: z.number().int().nonnegative(),
+});
+export type PredictionPreviewResponse = z.infer<typeof predictionPreviewResponseSchema>;
+
 export {
   calculateCost,
   calculatePrices,

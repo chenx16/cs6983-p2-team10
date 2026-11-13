@@ -3,18 +3,15 @@ import jwt from "jsonwebtoken";
 import { PrismaClient } from "@prisma/client";
 import request from "supertest";
 import { beforeEach, afterAll, describe, expect, it } from "vitest";
+import { resetDatabase } from "./test/reset-db.js";
 
 process.env.JWT_SECRET = randomBytes(32).toString("hex");
-if (process.env.DATABASE_URL_TEST) {
-  process.env.DATABASE_URL = process.env.DATABASE_URL_TEST;
-}
 
 const { createApp } = await import("./app.js");
 const prisma = new PrismaClient();
 
 beforeEach(async () => {
-  await prisma.creditLedger.deleteMany();
-  await prisma.user.deleteMany();
+  await resetDatabase(prisma);
 });
 
 afterAll(async () => {

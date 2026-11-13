@@ -41,6 +41,7 @@ jobs:
       - run: npm exec --workspace=@forecasthub/api -- prisma migrate deploy
       - run: npm run typecheck
       - run: npm run lint
+      - run: npm run build --workspace=@forecasthub/shared
       - run: npm test
       - run: npm run build
 

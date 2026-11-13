@@ -89,6 +89,20 @@ npm test
 npm run build
 ```
 
+API integration tests use the separate local PostgreSQL database
+`forecasthub_test`, configured in `apps/api/.env.test`. Create that ignored
+file from the safe local template, then apply the existing Prisma migrations:
+
+```bash
+cp apps/api/.env.test.example apps/api/.env.test
+set -a && source apps/api/.env.test && set +a
+DATABASE_URL="$DATABASE_URL_TEST" npm exec --workspace=@forecasthub/api -- prisma migrate deploy
+```
+
+The development database is not used or cleared by tests. Test cleanup refuses
+to run unless the configured database is local/CI test infrastructure and its
+name ends in `_test`.
+
 Database commands:
 
 ```bash
@@ -131,6 +145,15 @@ Configure these GitHub Actions repository secrets before merging to `main`:
 The deployment workflow reads these values only from GitHub repository secrets.
 Do not commit provider tokens, project identifiers that are secret, deploy
 hooks, or application environment values to the repository.
+
+## Known limitations
+
+The pre-authentication IP rate limit on prediction routes is a safety net,
+defaulting to 600 requests per minute and configurable with
+`PREDICTION_PREAUTH_RATE_LIMIT`. Behind Vercel and Render proxies, multiple
+users may share the same apparent IP address, so the limit is deliberately
+generous. Accurate IP-based rate limiting depends on a safe `trust proxy`
+configuration tracked in [issue #16](https://github.com/chenx16/cs6983-p2-team10/issues/16).
 
 ## Known security issues
 
