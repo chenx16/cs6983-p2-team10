@@ -7,6 +7,11 @@ import { createQuestion, finalizeQuestion, getCategories, getOrganizerQuestions,
 const initialForm = { title: "", categoryId: "", answerA: "", answerB: "", startingPriceA: 50, deadline: "", eventTime: "", outcomeCriteria: "", source: "" };
 type FormState = typeof initialForm;
 
+const localDateTimeValue = (date: Date) => {
+  const offset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+};
+
 export function OrganizerPage({ user }: { user: AuthUser | null }) {
   const [categories, setCategories] = useState<OrganizerCategory[]>([]);
   const [questions, setQuestions] = useState<OrganizerQuestion[]>([]);
@@ -36,12 +41,19 @@ export function OrganizerPage({ user }: { user: AuthUser | null }) {
   const change = (field: keyof FormState, value: string | number) => setForm((current) => ({ ...current, [field]: value }));
   const submit = async (event: React.FormEvent) => {
     event.preventDefault(); setError(""); setMessage("");
-    if (new Date(form.deadline) > new Date(form.eventTime)) {
+    const deadline = new Date(form.deadline);
+    const eventTime = new Date(form.eventTime);
+    if (Number.isNaN(deadline.getTime()) || Number.isNaN(eventTime.getTime())) {
+      setError("Enter both a deadline and event time.");
+      return;
+    }
+    if (deadline > eventTime) {
       setError("Deadline must be at or before event time.");
       return;
     }
     try {
-      const result = editing ? await updateQuestion(editing, form) : await createQuestion(form);
+      const request = { ...form, deadline: deadline.toISOString(), eventTime: eventTime.toISOString() };
+      const result = editing ? await updateQuestion(editing, request) : await createQuestion(request);
       setMessage(editing ? "Draft updated." : "Draft saved.");
       setQuestions((current) => editing ? current.map((question) => question.id === editing ? result.question : question) : [result.question, ...current]);
       setEditing(null); setForm({ ...initialForm, categoryId: form.categoryId });
@@ -66,7 +78,7 @@ export function OrganizerPage({ user }: { user: AuthUser | null }) {
         <label>Category<select required onChange={(event) => change("categoryId", event.target.value)} value={form.categoryId}><option value="">Choose category</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>
         <div className="form-two"><label>Answer A<input required maxLength={40} onChange={(event) => change("answerA", event.target.value)} value={form.answerA} /></label><label>Answer B<input required maxLength={40} onChange={(event) => change("answerB", event.target.value)} value={form.answerB} /></label></div>
         <label>Starting price for A: {form.startingPriceA}<input max={90} min={10} onChange={(event) => change("startingPriceA", Number(event.target.value))} type="range" value={form.startingPriceA} /></label>
-        <div className="form-two"><label>Deadline (Pacific Time)<input required onChange={(event) => change("deadline", event.target.value ? new Date(event.target.value).toISOString() : "")} type="datetime-local" value={form.deadline ? form.deadline.slice(0, 16) : ""} /></label><label>Event time (Pacific Time)<input required onChange={(event) => change("eventTime", event.target.value ? new Date(event.target.value).toISOString() : "")} type="datetime-local" value={form.eventTime ? form.eventTime.slice(0, 16) : ""} /></label></div>
+        <div className="form-two"><label>Deadline (Pacific Time)<input aria-describedby="deadline-help" required max={form.eventTime || undefined} min={localDateTimeValue(new Date())} onChange={(event) => change("deadline", event.target.value)} type="datetime-local" value={form.deadline} /><span className="field-help" id="deadline-help">Choose when predictions close.</span></label><label>Event time (Pacific Time)<input required min={form.deadline || localDateTimeValue(new Date())} onChange={(event) => change("eventTime", event.target.value)} type="datetime-local" value={form.eventTime} /></label></div>
         <label>Outcome criteria<textarea required maxLength={2000} onChange={(event) => change("outcomeCriteria", event.target.value)} value={form.outcomeCriteria} /></label><label>Trusted source<input required maxLength={500} onChange={(event) => change("source", event.target.value)} value={form.source} /></label>
         <div className="form-actions"><button className="button button-primary" type="submit">{editing ? "Save draft changes" : "Save draft"}</button>{editing && <button className="button" onClick={() => { setEditing(null); setForm({ ...initialForm, categoryId: form.categoryId }); }} type="button">Cancel edit</button>}</div>
       </form>
