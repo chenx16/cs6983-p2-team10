@@ -3,8 +3,11 @@ export type OrganizerQuestion = {
   id: string;
   title: string;
   status: string;
+  startingPriceA: number;
   deadline: string;
   eventTime: string;
+  outcomeCriteria: string;
+  source: string;
   category: { name: string };
   answers: { text: string }[];
   _count: { predictions: number };

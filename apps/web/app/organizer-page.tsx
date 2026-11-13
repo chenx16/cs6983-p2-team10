@@ -61,7 +61,17 @@ export function OrganizerPage({ user }: { user: AuthUser | null }) {
   };
   const edit = (question: OrganizerQuestion) => {
     setEditing(question.id);
-    setForm({ ...initialForm, title: question.title, categoryId: categories.find((category) => category.name === question.category.name)?.id ?? "", answerA: question.answers[0]?.text ?? "", answerB: question.answers[1]?.text ?? "" });
+    setForm({
+      title: question.title,
+      categoryId: categories.find((category) => category.name === question.category.name)?.id ?? "",
+      answerA: question.answers[0]?.text ?? "",
+      answerB: question.answers[1]?.text ?? "",
+      startingPriceA: question.startingPriceA,
+      deadline: localDateTimeValue(new Date(question.deadline)),
+      eventTime: localDateTimeValue(new Date(question.eventTime)),
+      outcomeCriteria: question.outcomeCriteria,
+      source: question.source,
+    });
   };
   const action = async (operation: () => Promise<unknown>, success: string) => {
     setError(""); setMessage("");
