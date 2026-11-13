@@ -70,6 +70,15 @@ export const createApp = () => {
     standardHeaders: true,
     windowMs: 15 * 60 * 1000,
   });
+  const predictionPreAuthRateLimit = rateLimit({
+    handler: (_request, response) => {
+      response.status(429).json({ error: { code: "RATE_LIMITED", message: "Too many prediction requests. Try again later." } });
+    },
+    legacyHeaders: false,
+    max: env.PREDICTION_PREAUTH_RATE_LIMIT,
+    standardHeaders: true,
+    windowMs: 60 * 1000,
+  });
   const predictionPreviewRateLimit = rateLimit({
     handler: (_request, response) => {
       response.status(429).json({ error: { code: "RATE_LIMITED", message: "Too many preview requests. Try again later." } });
@@ -169,7 +178,7 @@ export const createApp = () => {
     }
   });
 
-  app.post("/api/v1/private/questions/:questionId/predictions/preview", requireAuth, predictionPreviewRateLimit, async (request: AuthenticatedRequest, response, next) => {
+  app.post("/api/v1/private/questions/:questionId/predictions/preview", predictionPreAuthRateLimit, requireAuth, predictionPreviewRateLimit, async (request: AuthenticatedRequest, response, next) => {
     try {
       await previewPrediction(request, response);
     } catch (error) {
@@ -177,7 +186,7 @@ export const createApp = () => {
     }
   });
 
-  app.post("/api/v1/private/questions/:questionId/predictions", requireAuth, predictionPlacementRateLimit, async (request: AuthenticatedRequest, response, next) => {
+  app.post("/api/v1/private/questions/:questionId/predictions", predictionPreAuthRateLimit, requireAuth, predictionPlacementRateLimit, async (request: AuthenticatedRequest, response, next) => {
     try {
       await placePrediction(request, response);
     } catch (error) {
