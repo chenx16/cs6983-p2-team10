@@ -44,6 +44,7 @@ jobs:
       - run: npm run build --workspace=@forecasthub/shared
       - run: npm test
       - run: npm run build
+      - run: npm run smoke
 
   deploy-web:
     name: Deploy web to Vercel

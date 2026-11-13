@@ -5,7 +5,7 @@ import {
   placePredictionRequestSchema,
   predictionPreviewRequestSchema,
   predictionPreviewResponseSchema,
-} from "./index";
+} from "./index.js";
 
 describe("prediction contracts", () => {
   it("accepts a valid preview request", () => {
