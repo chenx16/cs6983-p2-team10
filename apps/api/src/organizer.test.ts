@@ -48,6 +48,8 @@ describe("organizer question workflow", () => {
       .send(input({ categoryId: category.id }));
     expect(draft.status).toBe(201);
     expect(draft.body.question.status).toBe(QuestionStatus.DRAFT);
+    expect(draft.body.question._count.predictions).toBe(0);
+    expect(draft.body.question.category.name).toBe("Sports");
 
     const published = await request(app)
       .post(`/api/v1/private/organizer/questions/${draft.body.question.id}/publish`)

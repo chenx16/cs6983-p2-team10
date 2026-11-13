@@ -25,6 +25,12 @@ const answerData = (input: AbQuestionRequest) => [
   { text: input.answerB, sortOrder: 1 },
 ];
 
+const organizerQuestionInclude = {
+  category: { select: { name: true } },
+  answers: { orderBy: { sortOrder: "asc" as const }, select: { text: true } },
+  _count: { select: { predictions: true } },
+};
+
 const assertCategory = async (categoryId: string) => {
   if (!await prisma.category.findUnique({ where: { id: categoryId }, select: { id: true } })) {
     throw new OrganizerActionError("INVALID_CATEGORY", "Category not found.");
@@ -35,7 +41,7 @@ export const listOrganizerQuestions = (organizerId: string) =>
   prisma.question.findMany({
     where: { organizerId },
     orderBy: { updatedAt: "desc" },
-    include: { category: { select: { name: true } }, answers: { orderBy: { sortOrder: "asc" }, select: { text: true } }, _count: { select: { predictions: true } } },
+    include: organizerQuestionInclude,
   });
 
 export const listCategories = () => prisma.category.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } });
@@ -48,7 +54,7 @@ export const createOrganizerQuestion = async (organizerId: string, input: AbQues
       organizerId,
       answers: { create: answerData(input) },
     },
-    include: { category: { select: { name: true } }, answers: { orderBy: { sortOrder: "asc" } } },
+    include: organizerQuestionInclude,
   });
 };
 
@@ -62,7 +68,7 @@ export const updateOrganizerQuestion = async (organizerId: string, questionId: s
     return transaction.question.update({
       where: { id: questionId },
       data: { ...questionData(input), answers: { create: answerData(input) } },
-      include: { category: { select: { name: true } }, answers: { orderBy: { sortOrder: "asc" } } },
+      include: organizerQuestionInclude,
     });
   });
 };
