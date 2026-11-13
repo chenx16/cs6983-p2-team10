@@ -46,6 +46,12 @@ const openApiDocument = {
 
 export const createApp = () => {
   const app = express();
+  const predictionRateLimitKey = (request: AuthenticatedRequest) => {
+    if (!request.auth) {
+      throw new Error("Prediction rate limiting requires authentication.");
+    }
+    return request.auth.userId;
+  };
   const authMutationRateLimit = rateLimit({
     handler: (_request, response) => {
       response.status(429).json({ error: { code: "RATE_LIMITED", message: "Too many authentication attempts. Try again later." } });
@@ -63,6 +69,26 @@ export const createApp = () => {
     max: 100,
     standardHeaders: true,
     windowMs: 15 * 60 * 1000,
+  });
+  const predictionPreviewRateLimit = rateLimit({
+    handler: (_request, response) => {
+      response.status(429).json({ error: { code: "RATE_LIMITED", message: "Too many preview requests. Try again later." } });
+    },
+    keyGenerator: predictionRateLimitKey,
+    legacyHeaders: false,
+    max: 120,
+    standardHeaders: true,
+    windowMs: 60 * 1000,
+  });
+  const predictionPlacementRateLimit = rateLimit({
+    handler: (_request, response) => {
+      response.status(429).json({ error: { code: "RATE_LIMITED", message: "Too many prediction requests. Try again later." } });
+    },
+    keyGenerator: predictionRateLimitKey,
+    legacyHeaders: false,
+    max: 120,
+    standardHeaders: true,
+    windowMs: 60 * 1000,
   });
   app.use(cors({ origin: env.WEB_ORIGIN, credentials: true }));
   app.use(express.json());
@@ -143,7 +169,7 @@ export const createApp = () => {
     }
   });
 
-  app.post("/api/v1/private/questions/:questionId/predictions/preview", requireAuth, async (request: AuthenticatedRequest, response, next) => {
+  app.post("/api/v1/private/questions/:questionId/predictions/preview", requireAuth, predictionPreviewRateLimit, async (request: AuthenticatedRequest, response, next) => {
     try {
       await previewPrediction(request, response);
     } catch (error) {
@@ -151,7 +177,7 @@ export const createApp = () => {
     }
   });
 
-  app.post("/api/v1/private/questions/:questionId/predictions", requireAuth, async (request: AuthenticatedRequest, response, next) => {
+  app.post("/api/v1/private/questions/:questionId/predictions", requireAuth, predictionPlacementRateLimit, async (request: AuthenticatedRequest, response, next) => {
     try {
       await placePrediction(request, response);
     } catch (error) {
