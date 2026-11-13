@@ -26,6 +26,7 @@ const findPublicQuestion = async (questionId: string) =>
     include: {
       category: { select: { name: true } },
       answers: { orderBy: { sortOrder: "asc" } },
+      correctAnswer: { select: { id: true } },
     },
   });
 
@@ -78,6 +79,8 @@ export const getPublicQuestionDetail = async (
     eventTime: question.eventTime.toISOString(),
     outcomeCriteria: question.outcomeCriteria,
     source: question.source,
+    resolutionNote: question.resolutionNote,
+    correctAnswerId: question.correctAnswerId,
     totalCreditsSpent: totals.reduce(
       (sum, total) => sum + (total._sum.creditsCharged ?? 0),
       0,
@@ -208,6 +211,9 @@ export const getMyQuestionPredictions = async (
         creditsCharged: prediction.creditsCharged,
         shares,
         payoutIfCorrect: shares,
+        ...(question.status === "RESOLVED"
+          ? { won: prediction.answerId === question.correctAnswerId }
+          : {}),
         createdAt: prediction.createdAt.toISOString(),
       };
     }),

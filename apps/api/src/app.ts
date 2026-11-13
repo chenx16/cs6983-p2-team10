@@ -10,6 +10,8 @@ import { env } from "./env.js";
 import { prisma } from "./prisma.js";
 import { placePrediction, previewPrediction } from "./predictions.js";
 import { getMyQuestionPredictions, getPublicQuestionDetail, listPublicArenaQuestions } from "./question-detail.js";
+import { listReadyToResolve, resolveAbQuestion, ResolutionError } from "./resolution.js";
+import { resolveAbQuestionRequestSchema } from "@forecasthub/shared";
 
 const openApiDocument = {
   openapi: "3.0.3",
@@ -329,6 +331,32 @@ export const createApp = () => {
     try {
       response.json({ questions: await listOrganizerQuestions(request.auth!.userId) });
     } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/v1/private/organizer/questions/ready-to-resolve", requireAuth, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
+    try {
+      response.json({ questions: await listReadyToResolve(request.auth!.userId) });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/v1/private/organizer/questions/:questionId/resolve", requireAuth, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
+    const parsed = resolveAbQuestionRequestSchema.safeParse(request.body);
+    if (!parsed.success) {
+      response.status(400).json({ error: { code: "INVALID_INPUT", message: parsed.error.issues.map((issue) => issue.message).join(" ") } });
+      return;
+    }
+    try {
+      const question = await resolveAbQuestion(request.auth!.userId, String(request.params.questionId), parsed.data);
+      response.json({ question });
+    } catch (error) {
+      if (error instanceof ResolutionError) {
+        response.status(error.code === "NOT_FOUND" ? 404 : 409).json({ error: { code: error.code, message: error.message } });
+        return;
+      }
       next(error);
     }
   });

@@ -108,6 +108,10 @@ h1 { font-size: 1.625rem; letter-spacing: -.015em; line-height: 1.2; margin: 0; 
 .organizer-form label, .form-two label { color: var(--muted); display: grid; font-size: .75rem; font-weight: 600; gap: 5px; }
 .organizer-form input, .organizer-form select, .organizer-form textarea { background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; color: var(--ink); padding: 9px 10px; }
 .field-help { color: var(--muted); font-size: .7rem; font-weight: 400; }
+.resolution-result { margin-bottom: 16px; }
+.resolution-result h2 { margin: 4px 0; }
+.prediction-won { color: var(--green); }
+.prediction-lost { color: var(--muted); }
 .organizer-form textarea { min-height: 84px; resize: vertical; }
 .form-two { display: grid; gap: 10px; grid-template-columns: 1fr 1fr; }
 .form-actions { display: flex; flex-wrap: wrap; gap: 8px; }
