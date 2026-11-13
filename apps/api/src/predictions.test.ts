@@ -20,7 +20,7 @@ afterAll(async () => {
 const createScenario = async () => {
   const app = createApp();
   const registration = await request(app).post("/api/v1/auth/register").send({
-    username: "prediction-user",
+    username: "predictionuser",
     email: "prediction-user@example.com",
     password: "CorrectHorse1",
   });
@@ -68,7 +68,7 @@ describe("prediction preview and placement", () => {
     const previewPath = `/api/v1/private/questions/${scenario.question.id}/predictions/preview`;
     const placementPath = `/api/v1/private/questions/${scenario.question.id}/predictions`;
     const registration = await request(scenario.app).post("/api/v1/auth/register").send({
-      username: "other-user",
+      username: "otheruser",
       email: "other@example.com",
       password: "CorrectHorse1",
     });
@@ -113,7 +113,7 @@ describe("prediction preview and placement", () => {
     const previewPath = `/api/v1/private/questions/${scenario.question.id}/predictions/preview`;
     const placementPath = `/api/v1/private/questions/${scenario.question.id}/predictions`;
     const registration = await request(scenario.app).post("/api/v1/auth/register").send({
-      username: "other-user",
+      username: "otheruser",
       email: "other@example.com",
       password: "CorrectHorse1",
     });

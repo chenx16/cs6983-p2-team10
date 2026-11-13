@@ -4,9 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { AuthPage } from "./auth-page";
 import { getCurrentUser, logout } from "./auth-client";
 import type { AuthUser } from "./auth-client";
+import { AppShell, type AuthMode, type View } from "./app-shell";
 
-type View = "arena" | "leaderboard" | "profile" | "sign-in";
-type AuthMode = "register" | "login";
 type QuestionType = "A/B" | "Multi";
 type Status = "Open" | "Soon" | "Resolved";
 
@@ -22,8 +21,6 @@ type Question = {
   source: string;
   criteria: string;
 };
-
-const apiDocsUrl = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"}/api/docs/`;
 
 const questions: Question[] = [
   {
@@ -99,8 +96,6 @@ const leaderboard = [
   { rank: 4, username: "signalhouse", scored: 28, success: "68%" },
 ];
 
-const roleLabel = (role: string) => role.charAt(0) + role.slice(1).toLowerCase();
-
 function Icon({ children }: { children: React.ReactNode }) {
   return <span aria-hidden="true" className="icon">{children}</span>;
 }
@@ -160,56 +155,6 @@ function QuestionCard({ question, onOpen }: { question: Question; onOpen: () => 
         <span>{question.deadline}</span><strong>{question.total.toLocaleString()} credits</strong>
       </div>
     </article>
-  );
-}
-
-function AppShell({
-  view,
-  onNavigate,
-  onAuthNavigate,
-  user,
-  onSignOut,
-  children,
-}: {
-  view: View;
-  onNavigate: (view: View) => void;
-  onAuthNavigate: (mode: AuthMode) => void;
-  user: AuthUser | null;
-  onSignOut: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="app-shell">
-      <aside className="sidebar">
-        <button className="brand" onClick={() => onNavigate("arena")}><span className="brand-mark">↗</span> ForecastHub</button>
-        <nav aria-label="Primary navigation" className="nav-links">
-          <button className={view === "arena" ? "active" : ""} onClick={() => onNavigate("arena")}><Icon>⌂</Icon> Arena</button>
-          <button className={view === "leaderboard" ? "active" : ""} onClick={() => onNavigate("leaderboard")}><Icon>♜</Icon> Leaderboard</button>
-          <a href={apiDocsUrl}><Icon>⌁</Icon> API docs</a>
-        </nav>
-        <div className="sidebar-bottom">
-          <p>Credits are virtual and free.</p>
-          {user ? (
-            <div className="user-card">
-              <strong>{user.username}</strong>
-              {user.role === "ADMINISTRATOR" && <span>{roleLabel(user.role)}</span>}
-              <span>{user.balance.toLocaleString()} credits</span>
-              <Button onClick={onSignOut}>Sign out</Button>
-            </div>
-          ) : (
-            <>
-              <Button onClick={() => onAuthNavigate("login")}>Sign in</Button>
-              <Button primary onClick={() => onAuthNavigate("register")}>Register</Button>
-            </>
-          )}
-        </div>
-      </aside>
-      <div className="mobile-bar">
-        <button className="brand" onClick={() => onNavigate("arena")}><span className="brand-mark">↗</span> ForecastHub</button>
-        <button className="mobile-menu" aria-label="Open navigation" onClick={() => onNavigate("leaderboard")}>☰</button>
-      </div>
-      <main className="main-content">{children}</main>
-    </div>
   );
 }
 
@@ -285,6 +230,7 @@ export default function HomePage() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
   useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("view") === "leaderboard") setView("leaderboard");
     void getCurrentUser().then(setUser);
   }, []);
   const handleAuthenticated = async () => {

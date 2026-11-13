@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import React from "react";
+import { usernameSchema } from "@forecasthub/shared";
 import { login, register } from "./auth-client";
 
 export type AuthPageProps = {
@@ -17,6 +18,7 @@ export const AuthPage: React.FunctionComponent<AuthPageProps> = ({ initialMode =
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [passwordSubmitted, setPasswordSubmitted] = useState(false);
+  const [usernameError, setUsernameError] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const passwordRequirements = [
@@ -31,6 +33,8 @@ export const AuthPage: React.FunctionComponent<AuthPageProps> = ({ initialMode =
     event.preventDefault();
     setError("");
     if (mode === "register") {
+      const usernameResult = usernameSchema.safeParse(username);
+      setUsernameError(usernameResult.success ? "" : usernameResult.error.issues[0]?.message ?? "Invalid username.");
       setPasswordSubmitted(true);
       const validPassword = password.length >= 8
         && /[A-Z]/.test(password)
@@ -42,6 +46,7 @@ export const AuthPage: React.FunctionComponent<AuthPageProps> = ({ initialMode =
         setError("Please fix the highlighted password requirements.");
         return;
       }
+      if (!usernameResult.success) return;
     }
     setIsSubmitting(true);
     try {
@@ -76,13 +81,16 @@ export const AuthPage: React.FunctionComponent<AuthPageProps> = ({ initialMode =
             <label className="field-label" htmlFor="username">Username</label>
             <input
               autoComplete="username"
+              aria-describedby={usernameError ? "username-error" : undefined}
+              aria-invalid={Boolean(usernameError)}
               className="text-input"
               id="username"
               name="username"
-              onChange={(event) => setUsername(event.target.value)}
+              onChange={(event) => { setUsername(event.target.value); setUsernameError(""); }}
               required
               value={username}
             />
+            {usernameError && <p className="error-message" id="username-error" role="alert">{usernameError}</p>}
           </>
         )}
         <label className="field-label" htmlFor={mode === "register" ? "email" : "identifier"}>{mode === "register" ? "Email address" : "Username or email"}</label>
@@ -139,6 +147,7 @@ export const AuthPage: React.FunctionComponent<AuthPageProps> = ({ initialMode =
           <button
             onClick={() => {
               setError("");
+              setUsernameError("");
               setMode(mode === "register" ? "login" : "register");
             }}
             type="button"

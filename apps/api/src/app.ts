@@ -7,6 +7,7 @@ import { authenticateUser, clearAuthCookie, createAccessToken, publicUser, regis
 import { env } from "./env.js";
 import { prisma } from "./prisma.js";
 import { placePrediction, previewPrediction } from "./predictions.js";
+import { getMyQuestionPredictions, getPublicQuestionDetail } from "./question-detail.js";
 
 const openApiDocument = {
   openapi: "3.0.3",
@@ -26,10 +27,57 @@ const openApiDocument = {
             content: { "application/json": { schema: { $ref: "#/components/schemas/HealthResponse" } } },
           },
         },
+        "/api/v1/public/questions/{questionId}": {
+          get: {
+            summary: "Get public A/B question details and crowd aggregates",
+            parameters: [{
+              name: "questionId",
+              in: "path",
+              required: true,
+              schema: { type: "string" },
+            }],
+            responses: {
+              "200": {
+                description: "Public question details and aggregate prediction data.",
+                content: { "application/json": { schema: { $ref: "#/components/schemas/QuestionDetailResponse" } } },
+              },
+              "404": { description: "Question not found." },
+              "429": { description: "Rate limit exceeded." },
+            },
+          },
+        },
+        "/api/v1/private/questions/{questionId}/predictions": {
+          get: {
+            summary: "Get the authenticated user's predictions for a question",
+            security: [{ cookieAuth: [] }],
+            parameters: [{
+              name: "questionId",
+              in: "path",
+              required: true,
+              schema: { type: "string" },
+            }],
+            responses: {
+              "200": {
+                description: "The authenticated user's predictions.",
+                content: { "application/json": { schema: { $ref: "#/components/schemas/MyQuestionPredictionsResponse" } } },
+              },
+              "401": { description: "Authentication required." },
+              "404": { description: "Question not found." },
+              "429": { description: "Rate limit exceeded." },
+            },
+          },
+        },
       },
     },
   },
   components: {
+    securitySchemes: {
+      cookieAuth: {
+        type: "apiKey",
+        in: "cookie",
+        name: "access_token",
+      },
+    },
     schemas: {
       HealthResponse: {
         type: "object",
@@ -38,6 +86,52 @@ const openApiDocument = {
           status: { type: "string", enum: ["ok"] },
           service: { type: "string" },
           timestamp: { type: "string", format: "date-time" },
+        },
+        QuestionDetailResponse: {
+          type: "object",
+          description: "Public question data and aggregate predictions; no individual prediction details.",
+          properties: {
+            id: { type: "string" },
+            title: { type: "string" },
+            category: { type: "string" },
+            status: { type: "string" },
+            deadline: { type: "string", format: "date-time" },
+            eventTime: { type: "string", format: "date-time" },
+            outcomeCriteria: { type: "string" },
+            source: { type: "string" },
+            totalCreditsSpent: { type: "integer" },
+            answers: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  id: { type: "string" },
+                  text: { type: "string" },
+                  price: { type: "integer" },
+                  creditsSpent: { type: "integer" },
+                },
+              },
+            },
+          },
+        },
+        MyQuestionPredictionsResponse: {
+          type: "object",
+          properties: {
+            predictions: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  answerId: { type: "string" },
+                  answerText: { type: "string" },
+                  creditsCharged: { type: "integer" },
+                  shares: { type: "integer", description: "Hundredths of a share." },
+                  payoutIfCorrect: { type: "integer", description: "Credits." },
+                  createdAt: { type: "string", format: "date-time" },
+                },
+              },
+            },
+          },
         },
       },
     },
@@ -79,6 +173,15 @@ export const createApp = () => {
     standardHeaders: true,
     windowMs: 60 * 1000,
   });
+  const publicQuestionDetailRateLimit = rateLimit({
+    handler: (_request, response) => {
+      response.status(429).json({ error: { code: "RATE_LIMITED", message: "Too many question detail requests. Try again later." } });
+    },
+    legacyHeaders: false,
+    max: env.PUBLIC_QUESTION_DETAIL_RATE_LIMIT,
+    standardHeaders: true,
+    windowMs: 60 * 1000,
+  });
   const predictionPreviewRateLimit = rateLimit({
     handler: (_request, response) => {
       response.status(429).json({ error: { code: "RATE_LIMITED", message: "Too many preview requests. Try again later." } });
@@ -92,6 +195,16 @@ export const createApp = () => {
   const predictionPlacementRateLimit = rateLimit({
     handler: (_request, response) => {
       response.status(429).json({ error: { code: "RATE_LIMITED", message: "Too many prediction requests. Try again later." } });
+    },
+    keyGenerator: predictionRateLimitKey,
+    legacyHeaders: false,
+    max: 120,
+    standardHeaders: true,
+    windowMs: 60 * 1000,
+  });
+  const myQuestionPredictionsRateLimit = rateLimit({
+    handler: (_request, response) => {
+      response.status(429).json({ error: { code: "RATE_LIMITED", message: "Too many prediction history requests. Try again later." } });
     },
     keyGenerator: predictionRateLimitKey,
     legacyHeaders: false,
@@ -116,6 +229,14 @@ export const createApp = () => {
       service: "forecasthub-api",
       timestamp: new Date().toISOString(),
     }));
+  });
+
+  app.get("/api/v1/public/questions/:questionId", publicQuestionDetailRateLimit, async (request: AuthenticatedRequest, response, next) => {
+    try {
+      await getPublicQuestionDetail(request, response);
+    } catch (error) {
+      next(error);
+    }
   });
 
   app.post("/api/v1/auth/register", authMutationRateLimit, async (request, response, next) => {
@@ -173,6 +294,14 @@ export const createApp = () => {
         return;
       }
       response.json({ user: publicUser(user) });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/v1/private/questions/:questionId/predictions", predictionPreAuthRateLimit, requireAuth, myQuestionPredictionsRateLimit, async (request: AuthenticatedRequest, response, next) => {
+    try {
+      await getMyQuestionPredictions(request, response);
     } catch (error) {
       next(error);
     }

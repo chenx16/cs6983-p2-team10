@@ -18,8 +18,13 @@ export const healthResponseSchema = z.object({
 });
 export type HealthResponse = z.infer<typeof healthResponseSchema>;
 
+export const usernameSchema = z.string().trim()
+  .min(2, "Username must be at least 2 characters.")
+  .max(40, "Username must be at most 40 characters.")
+  .regex(/^[A-Za-z0-9]+$/, "Username must contain only English letters and numbers.");
+
 export const registerRequestSchema = z.object({
-  username: z.string().trim().min(2).max(40),
+  username: usernameSchema,
   email: z.string().trim().email(),
   password: z.string().min(8).regex(/[A-Z]/, "Password must include an uppercase letter.").regex(/[a-z]/, "Password must include a lowercase letter.").regex(/[0-9]/, "Password must include a number."),
 }).superRefine((input, context) => {
@@ -73,6 +78,37 @@ export const predictionPreviewResponseSchema = z.object({
   marketVersion: z.number().int().nonnegative(),
 });
 export type PredictionPreviewResponse = z.infer<typeof predictionPreviewResponseSchema>;
+
+export const questionDetailResponseSchema = z.object({
+  id: z.string().min(1),
+  title: z.string(),
+  category: z.string(),
+  status: z.string(),
+  deadline: z.string().datetime(),
+  eventTime: z.string().datetime(),
+  outcomeCriteria: z.string(),
+  source: z.string(),
+  totalCreditsSpent: z.number().int().nonnegative(),
+  answers: z.array(z.object({
+    id: z.string().min(1),
+    text: z.string(),
+    price: z.number().int().min(1).max(99),
+    creditsSpent: z.number().int().nonnegative(),
+  })).length(2),
+});
+export type QuestionDetailResponse = z.infer<typeof questionDetailResponseSchema>;
+
+export const myQuestionPredictionsResponseSchema = z.object({
+  predictions: z.array(z.object({
+    answerId: z.string().min(1),
+    answerText: z.string(),
+    creditsCharged: z.number().int().nonnegative(),
+    shares: z.number().int().nonnegative(),
+    payoutIfCorrect: z.number().int().nonnegative(),
+    createdAt: z.string().datetime(),
+  })),
+});
+export type MyQuestionPredictionsResponse = z.infer<typeof myQuestionPredictionsResponseSchema>;
 
 export {
   calculateCost,

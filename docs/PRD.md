@@ -152,7 +152,7 @@ Every account has exactly one role. Roles are cumulative: an Organizer can do ev
 
 **Acceptance criteria**
 1. Anyone can visit the ForecastHub website and browse questions, prices, charts, and the leaderboard without signing in. "Register" and "Sign in" buttons are always visible, and trying to make a prediction while signed out takes me to sign in.
-2. To register, I enter a username, an email address, and a password. Usernames must be 2 to 40 characters. Each username and each email address can be used for only one account.
+2. To register, I enter a username, an email address, and a password. New usernames must be 2 to 40 characters and contain only English letters (A–Z, a–z) and digits (0–9). Existing usernames remain valid for sign-in. Each username and each email address can be used for only one account.
 3. When I register, I am signed in right away. My account has the User role, and a balance of 1,000 credits.
 4. If my registration details are invalid (for example, the email is already registered or the username is taken), the form shows a clear message next to the field and no account is created.
 5. I can sign in with my email address and password, and sign out.
