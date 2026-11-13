@@ -154,8 +154,9 @@ describe("question detail and prediction panel", () => {
     expect(screen.getByText(/282/)).toBeTruthy();
     expect(screen.getByText(/67%/)).toBeTruthy();
     expect(screen.getByText(/33%/)).toBeTruthy();
-    expect(screen.getByText(/pacific|PDT|PT/i)).toBeTruthy();
-    expect(screen.getByText(/jun(?:e)?\s+1/i)).toBeTruthy();
+    const deadline = screen.getByText("Deadline").parentElement!;
+    expect(within(deadline).getByText(/pacific|PDT|PT/i)).toBeTruthy();
+    expect(within(deadline).getByText(/jun(?:e)?\s+1/i)).toBeTruthy();
     expect(requestsFor(fetchMock, paths.question)).toHaveLength(1);
   });
 
@@ -321,5 +322,35 @@ describe("question detail and prediction panel", () => {
       .map(([, init]) => JSON.parse(String(init?.body)));
     expect(submissions[0].idempotencyKey).toBeTruthy();
     expect(submissions[1]).toEqual(submissions[0]);
+  });
+
+  it("keeps the original key if an uncertain submission's retry is rate limited", async () => {
+    let attempts = 0;
+    const fetchMock = installApi({
+      place: async () => {
+        attempts++;
+        if (attempts === 1) throw new TypeError("Network request failed");
+        if (attempts === 2) return json({ error: { code: "RATE_LIMITED", message: "Try again later." } }, 429);
+        return json({
+          prediction: {
+            id: "prediction-1", answerId: "answer-a", shares: 354, creditsCharged: 208,
+            priceA: 67, priceB: 33, createdAt: prediction.createdAt,
+          },
+          balance: 792,
+        });
+      },
+    });
+    await renderPage();
+    await preparePreview();
+    await userEvent.click(screen.getByRole("button", { name: /confirm prediction/i }));
+    await screen.findByText(/network|connection/i);
+    await userEvent.click(screen.getByRole("button", { name: /retry/i }));
+    expect(await screen.findByText(/try again later/i)).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: /retry/i }));
+    await waitFor(() => expect(requestsFor(fetchMock, paths.predictions, "POST")).toHaveLength(3));
+    const submissions = requestsFor(fetchMock, paths.predictions, "POST")
+      .map(([, init]) => JSON.parse(String(init?.body)));
+    expect(submissions[1]).toEqual(submissions[0]);
+    expect(submissions[2]).toEqual(submissions[0]);
   });
 });
