@@ -17,9 +17,13 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.4",
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.10",
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.6",
     "@types/react-dom": "^19.0.2",
+    "jsdom": "27.0.1",
     "tailwindcss": "^4.3.4",
     "typescript": "*",
     "vitest": "^3.2.7"
