@@ -2,9 +2,10 @@ import cors from "cors";
 import express, { type ErrorRequestHandler } from "express";
 import rateLimit from "express-rate-limit";
 import swaggerUi from "swagger-ui-express";
-import { healthResponseSchema, loginRequestSchema, questionCancellationRequestSchema, registerRequestSchema, roleChangeRequestSchema } from "@forecasthub/shared";
-import { authenticateUser, clearAuthCookie, createAccessToken, publicUser, registerUser, requireAdministrator, requireAuth, setAuthCookie, type AuthenticatedRequest } from "./auth.js";
+import { abQuestionRequestSchema, healthResponseSchema, loginRequestSchema, questionCancellationRequestSchema, registerRequestSchema, roleChangeRequestSchema } from "@forecasthub/shared";
+import { authenticateUser, clearAuthCookie, createAccessToken, publicUser, registerUser, requireAdministrator, requireAuth, requireOrganizer, setAuthCookie, type AuthenticatedRequest } from "./auth.js";
 import { AdministratorActionError, cancelQuestion, changeUserRole, listAdministratorHistory, listAdministratorQuestions, listAdministratorUsers } from "./administrator.js";
+import { OrganizerActionError, createOrganizerQuestion, finalizeOrganizerQuestion, listCategories, listOrganizerQuestions, publishOrganizerQuestion, updateOrganizerQuestion } from "./organizer.js";
 import { env } from "./env.js";
 import { prisma } from "./prisma.js";
 import { placePrediction, previewPrediction } from "./predictions.js";
@@ -240,6 +241,14 @@ export const createApp = () => {
     }
   });
 
+  app.get("/api/v1/public/categories", async (_request, response, next) => {
+    try {
+      response.json({ categories: await listCategories() });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   app.post("/api/v1/auth/register", authMutationRateLimit, async (request, response, next) => {
     const parsed = registerRequestSchema.safeParse(request.body);
     if (!parsed.success) {
@@ -304,6 +313,76 @@ export const createApp = () => {
     try {
       await getMyQuestionPredictions(request, response);
     } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/v1/private/organizer/questions", requireAuth, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
+    try {
+      response.json({ questions: await listOrganizerQuestions(request.auth!.userId) });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/v1/private/organizer/questions", requireAuth, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
+    const parsed = abQuestionRequestSchema.safeParse(request.body);
+    if (!parsed.success || !request.auth) {
+      response.status(400).json({ error: { code: "INVALID_INPUT", message: "A/B question details are invalid." } });
+      return;
+    }
+    try {
+      const question = await createOrganizerQuestion(request.auth.userId, parsed.data);
+      response.status(201).json({ question });
+    } catch (error) {
+      if (error instanceof OrganizerActionError) {
+        response.status(400).json({ error: { code: error.code, message: error.message } });
+        return;
+      }
+      next(error);
+    }
+  });
+
+  app.patch("/api/v1/private/organizer/questions/:questionId", requireAuth, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
+    const parsed = abQuestionRequestSchema.safeParse(request.body);
+    if (!parsed.success || !request.auth) {
+      response.status(400).json({ error: { code: "INVALID_INPUT", message: "A/B question details are invalid." } });
+      return;
+    }
+    try {
+      const question = await updateOrganizerQuestion(request.auth.userId, String(request.params.questionId), parsed.data);
+      response.json({ question });
+    } catch (error) {
+      if (error instanceof OrganizerActionError) {
+        response.status(error.code === "NOT_FOUND" ? 404 : 409).json({ error: { code: error.code, message: error.message } });
+        return;
+      }
+      next(error);
+    }
+  });
+
+  app.post("/api/v1/private/organizer/questions/:questionId/publish", requireAuth, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
+    try {
+      const question = await publishOrganizerQuestion(request.auth!.userId, String(request.params.questionId));
+      response.json({ question });
+    } catch (error) {
+      if (error instanceof OrganizerActionError) {
+        response.status(error.code === "NOT_FOUND" ? 404 : 409).json({ error: { code: error.code, message: error.message } });
+        return;
+      }
+      next(error);
+    }
+  });
+
+  app.post("/api/v1/private/organizer/questions/:questionId/finalize", requireAuth, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
+    try {
+      const question = await finalizeOrganizerQuestion(request.auth!.userId, String(request.params.questionId));
+      response.json({ question });
+    } catch (error) {
+      if (error instanceof OrganizerActionError) {
+        response.status(error.code === "NOT_FOUND" ? 404 : 409).json({ error: { code: error.code, message: error.message } });
+        return;
+      }
       next(error);
     }
   });
