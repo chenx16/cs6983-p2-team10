@@ -2,8 +2,9 @@ import cors from "cors";
 import express, { type ErrorRequestHandler } from "express";
 import rateLimit from "express-rate-limit";
 import swaggerUi from "swagger-ui-express";
-import { healthResponseSchema, loginRequestSchema, registerRequestSchema } from "@forecasthub/shared";
-import { authenticateUser, clearAuthCookie, createAccessToken, publicUser, registerUser, requireAuth, setAuthCookie, type AuthenticatedRequest } from "./auth.js";
+import { healthResponseSchema, loginRequestSchema, questionCancellationRequestSchema, registerRequestSchema, roleChangeRequestSchema } from "@forecasthub/shared";
+import { authenticateUser, clearAuthCookie, createAccessToken, publicUser, registerUser, requireAdministrator, requireAuth, setAuthCookie, type AuthenticatedRequest } from "./auth.js";
+import { AdministratorActionError, cancelQuestion, changeUserRole, listAdministratorHistory, listAdministratorQuestions, listAdministratorUsers } from "./administrator.js";
 import { env } from "./env.js";
 import { prisma } from "./prisma.js";
 import { placePrediction, previewPrediction } from "./predictions.js";
@@ -319,6 +320,73 @@ export const createApp = () => {
     try {
       await placePrediction(request, response);
     } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/v1/private/admin/users", requireAuth, requireAdministrator, async (_request, response, next) => {
+    try {
+      const page = Number(_request.query.page) || 1;
+      const search = typeof _request.query.search === "string" ? _request.query.search.trim().slice(0, 100) : "";
+      response.json(await listAdministratorUsers(page, search));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/v1/private/admin/questions", requireAuth, requireAdministrator, async (_request, response, next) => {
+    try {
+      const page = Number(_request.query.page) || 1;
+      const search = typeof _request.query.search === "string" ? _request.query.search.trim().slice(0, 100) : "";
+      response.json(await listAdministratorQuestions(page, search));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/v1/private/admin/history", requireAuth, requireAdministrator, async (request, response, next) => {
+    try {
+      const page = Number(request.query.page) || 1;
+      response.json(await listAdministratorHistory(page));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.patch("/api/v1/private/admin/users/:userId/role", requireAuth, requireAdministrator, async (request: AuthenticatedRequest, response, next) => {
+    const parsed = roleChangeRequestSchema.safeParse(request.body);
+    if (!parsed.success || !request.auth) {
+      response.status(400).json({ error: { code: "INVALID_INPUT", message: "Role and reason are invalid." } });
+      return;
+    }
+    try {
+      const user = await changeUserRole(String(request.params.userId), parsed.data.role, parsed.data.reason, request.auth.userId);
+      response.json({ user: publicUser(user) });
+    } catch (error) {
+      if (error instanceof AdministratorActionError) {
+        const status = error.code === "NOT_FOUND" ? 404 : 409;
+        response.status(status).json({ error: { code: error.code, message: error.message } });
+        return;
+      }
+      next(error);
+    }
+  });
+
+  app.post("/api/v1/private/admin/questions/:questionId/cancel", requireAuth, requireAdministrator, async (request: AuthenticatedRequest, response, next) => {
+    const parsed = questionCancellationRequestSchema.safeParse(request.body);
+    if (!parsed.success || !request.auth) {
+      response.status(400).json({ error: { code: "INVALID_INPUT", message: "A cancellation reason is required." } });
+      return;
+    }
+    try {
+      const result = await cancelQuestion(String(request.params.questionId), parsed.data.reason, request.auth.userId);
+      response.json({ status: "CANCELLED", ...result });
+    } catch (error) {
+      if (error instanceof AdministratorActionError) {
+        const status = error.code === "NOT_FOUND" ? 404 : 409;
+        response.status(status).json({ error: { code: error.code, message: error.message } });
+        return;
+      }
       next(error);
     }
   });

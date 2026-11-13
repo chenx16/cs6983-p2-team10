@@ -40,6 +40,17 @@ export const loginRequestSchema = z.object({
 });
 export type LoginRequest = z.infer<typeof loginRequestSchema>;
 
+export const roleChangeRequestSchema = z.object({
+  role: roleSchema,
+  reason: z.string().trim().min(1).max(500),
+});
+export type RoleChangeRequest = z.infer<typeof roleChangeRequestSchema>;
+
+export const questionCancellationRequestSchema = z.object({
+  reason: z.string().trim().min(1).max(500),
+});
+export type QuestionCancellationRequest = z.infer<typeof questionCancellationRequestSchema>;
+
 export const authUserResponseSchema = z.object({
   id: z.string(),
   username: z.string(),

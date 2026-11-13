@@ -3,7 +3,7 @@
 import React, { type ReactNode } from "react";
 import type { AuthUser } from "./auth-client";
 
-export type View = "arena" | "leaderboard" | "profile" | "sign-in";
+export type View = "arena" | "leaderboard" | "profile" | "sign-in" | "admin";
 export type AuthMode = "register" | "login";
 
 const apiDocsUrl = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"}/api/docs/`;
@@ -33,6 +33,7 @@ export function AppShell({
         <nav aria-label="Primary navigation" className="nav-links">
           <button className={view === "arena" ? "active" : ""} onClick={() => onNavigate("arena")}><span aria-hidden="true" className="icon">⌂</span> Arena</button>
           <button className={view === "leaderboard" ? "active" : ""} onClick={() => onNavigate("leaderboard")}><span aria-hidden="true" className="icon">♜</span> Leaderboard</button>
+          {user?.role === "ADMINISTRATOR" && <button className={view === "admin" ? "active" : ""} onClick={() => onNavigate("admin")}><span aria-hidden="true" className="icon">⚙</span> Administration</button>}
           <a href={apiDocsUrl}><span aria-hidden="true" className="icon">⌁</span> API docs</a>
         </nav>
         <div className="sidebar-bottom">
