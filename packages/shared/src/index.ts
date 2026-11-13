@@ -51,6 +51,26 @@ export const questionCancellationRequestSchema = z.object({
 });
 export type QuestionCancellationRequest = z.infer<typeof questionCancellationRequestSchema>;
 
+export const abQuestionRequestSchema = z.object({
+  title: z.string().trim().min(1).max(200),
+  categoryId: z.string().trim().min(1),
+  answerA: z.string().trim().min(1).max(40),
+  answerB: z.string().trim().min(1).max(40),
+  startingPriceA: z.number().int().min(10).max(90).default(50),
+  deadline: z.string().datetime(),
+  eventTime: z.string().datetime(),
+  outcomeCriteria: z.string().trim().min(1).max(2000),
+  source: z.string().trim().min(1).max(500),
+}).superRefine((input, context) => {
+  if (input.answerA.toLocaleLowerCase() === input.answerB.toLocaleLowerCase()) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["answerB"], message: "Answers must be unique." });
+  }
+  if (new Date(input.deadline) > new Date(input.eventTime)) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["deadline"], message: "Deadline must be at or before event time." });
+  }
+});
+export type AbQuestionRequest = z.infer<typeof abQuestionRequestSchema>;
+
 export const authUserResponseSchema = z.object({
   id: z.string(),
   username: z.string(),

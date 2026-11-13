@@ -6,6 +6,7 @@ import { getCurrentUser, logout } from "./auth-client";
 import type { AuthUser } from "./auth-client";
 import { AppShell, type AuthMode, type View } from "./app-shell";
 import { AdminPage } from "./admin-page";
+import { OrganizerPage } from "./organizer-page";
 
 type QuestionType = "A/B" | "Multi";
 type Status = "Open" | "Soon" | "Resolved";
@@ -232,7 +233,7 @@ export default function HomePage() {
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
   useEffect(() => {
     const requestedView = new URLSearchParams(window.location.search).get("view");
-    if (requestedView === "leaderboard" || requestedView === "admin" || requestedView === "sign-in") setView(requestedView);
+    if (requestedView === "leaderboard" || requestedView === "admin" || requestedView === "organizer" || requestedView === "sign-in") setView(requestedView);
     void getCurrentUser().then(setUser);
   }, []);
   const handleAuthenticated = async () => {
@@ -248,6 +249,7 @@ export default function HomePage() {
     if (view === "sign-in") return <SignIn mode={authMode} onBack={handleAuthenticated} />;
     if (view === "leaderboard") return <Leaderboard />;
     if (view === "admin") return <AdminPage user={user} />;
+    if (view === "organizer") return <OrganizerPage user={user} />;
     if (selectedQuestion) return <Detail onBack={() => setSelectedQuestion(null)} onSignIn={() => setView("sign-in")} question={selectedQuestion} />;
     return <Arena onOpen={openQuestion} />;
   }, [authMode, selectedQuestion, view]);

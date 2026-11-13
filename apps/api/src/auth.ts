@@ -68,6 +68,27 @@ export const requireAdministrator = async (request: AuthenticatedRequest, respon
   }
 };
 
+export const requireOrganizer = async (request: AuthenticatedRequest, response: Response, next: NextFunction) => {
+  if (!request.auth) {
+    response.status(401).json({ error: { code: "UNAUTHENTICATED", message: "Authentication is required." } });
+    return;
+  }
+  try {
+    const user = await prisma.user.findUnique({ where: { id: request.auth.userId }, select: { role: true, isActive: true } });
+    if (!user || !user.isActive) {
+      response.status(401).json({ error: { code: "UNAUTHENTICATED", message: "Authentication is required." } });
+      return;
+    }
+    if (user.role !== Role.ORGANIZER && user.role !== Role.ADMINISTRATOR) {
+      response.status(403).json({ error: { code: "FORBIDDEN", message: "Organizer access is required." } });
+      return;
+    }
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const publicUser = (user: { id: string; username: string; email: string; role: Role; balance: number }) =>
   authUserResponseSchema.parse(user);
 

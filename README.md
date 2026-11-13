@@ -132,6 +132,23 @@ prediction charge is refunded in a transaction, and role changes, cancellation,
 and refund records retain the responsible account and reason for auditability.
 The last active Administrator cannot be demoted.
 
+Organizer question tools are available to Organizers and Administrators:
+
+```text
+GET   /api/v1/public/categories
+GET   /api/v1/private/organizer/questions
+POST  /api/v1/private/organizer/questions
+PATCH /api/v1/private/organizer/questions/:questionId
+POST  /api/v1/private/organizer/questions/:questionId/publish
+POST  /api/v1/private/organizer/questions/:questionId/finalize
+```
+
+The Organizer workspace is available at `/organizer` and from the authenticated
+navigation. It supports creating and editing owned drafts, publishing valid A/B
+questions, and closing an open question after its deadline. Finalization closes
+the question; selecting a correct answer and issuing payouts are separate
+resolution workflows.
+
 ## Environments
 
 ForecastHub uses separate local, preview, and production environments:
