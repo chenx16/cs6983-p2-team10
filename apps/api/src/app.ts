@@ -9,7 +9,7 @@ import { OrganizerActionError, createOrganizerQuestion, finalizeOrganizerQuestio
 import { env } from "./env.js";
 import { prisma } from "./prisma.js";
 import { placePrediction, previewPrediction } from "./predictions.js";
-import { getMyQuestionPredictions, getPublicQuestionDetail } from "./question-detail.js";
+import { getMyQuestionPredictions, getPublicQuestionDetail, listPublicArenaQuestions } from "./question-detail.js";
 
 const openApiDocument = {
   openapi: "3.0.3",
@@ -236,6 +236,14 @@ export const createApp = () => {
   app.get("/api/v1/public/questions/:questionId", publicQuestionDetailRateLimit, async (request: AuthenticatedRequest, response, next) => {
     try {
       await getPublicQuestionDetail(request, response);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/v1/public/questions", publicQuestionDetailRateLimit, async (_request, response, next) => {
+    try {
+      response.json({ questions: await listPublicArenaQuestions() });
     } catch (error) {
       next(error);
     }

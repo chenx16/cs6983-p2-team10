@@ -129,6 +129,15 @@ export const questionDetailResponseSchema = z.object({
 });
 export type QuestionDetailResponse = z.infer<typeof questionDetailResponseSchema>;
 
+export const arenaQuestionResponseSchema = questionDetailResponseSchema.extend({
+  status: z.literal("OPEN"),
+});
+export const arenaQuestionsResponseSchema = z.object({
+  questions: z.array(arenaQuestionResponseSchema),
+});
+export type ArenaQuestionResponse = z.infer<typeof arenaQuestionResponseSchema>;
+export type ArenaQuestionsResponse = z.infer<typeof arenaQuestionsResponseSchema>;
+
 export const myQuestionPredictionsResponseSchema = z.object({
   predictions: z.array(z.object({
     answerId: z.string().min(1),
