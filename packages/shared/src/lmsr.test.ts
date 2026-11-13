@@ -4,7 +4,7 @@ import {
   calculatePrices,
   calculatePurchaseForBudget,
   createMarket,
-} from "./lmsr";
+} from "./lmsr.js";
 
 describe("LMSR A/B pricing", () => {
   it("starts at the requested A/B prices", () => {

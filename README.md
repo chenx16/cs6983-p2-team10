@@ -89,6 +89,7 @@ npm run typecheck
 npm run lint
 npm test
 npm run build
+npm run smoke
 ```
 
 API integration tests use the separate local PostgreSQL database

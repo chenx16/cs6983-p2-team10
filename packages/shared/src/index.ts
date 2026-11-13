@@ -115,10 +115,10 @@ export {
   calculatePrices,
   calculatePurchaseForBudget,
   createMarket,
-} from "./lmsr";
+} from "./lmsr.js";
 export type {
   LmsrAnswer,
   LmsrMarket,
   LmsrPrices,
   LmsrPurchase,
-} from "./lmsr";
+} from "./lmsr.js";

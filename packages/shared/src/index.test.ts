@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { healthResponseSchema, roleSchema } from "./index";
+import { healthResponseSchema, roleSchema } from "./index.js";
 
 describe("shared contracts", () => {
   it("accepts the API health response", () => {
