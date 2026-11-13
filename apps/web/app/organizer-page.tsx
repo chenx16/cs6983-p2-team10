@@ -83,7 +83,7 @@ export function OrganizerPage({ user }: { user: AuthUser | null }) {
   };
   const action = async (operation: () => Promise<unknown>, success: string) => {
     setError(""); setMessage("");
-    try { await operation(); setMessage(success); await load(); } catch (requestError) { setError(requestError instanceof Error ? requestError.message : "Organizer action failed."); }
+    try { await operation(); setMessage(success); await load(); return true; } catch (requestError) { setError(requestError instanceof Error ? requestError.message : "Organizer action failed."); return false; }
   };
   const resolve = async (question: ReadyQuestion) => {
     setResolutionTarget(question);
@@ -93,7 +93,10 @@ export function OrganizerPage({ user }: { user: AuthUser | null }) {
   const submitResolution = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!resolutionTarget || !resolutionAnswerId || !evidenceNote.trim()) return;
-    await action(() => resolveQuestion(resolutionTarget.id, { answerId: resolutionAnswerId, evidenceNote: evidenceNote.trim() }), "Question resolved and payouts issued.");
+    const resolvedId = resolutionTarget.id;
+    const succeeded = await action(() => resolveQuestion(resolvedId, { answerId: resolutionAnswerId, evidenceNote: evidenceNote.trim() }), "Question resolved and payouts issued.");
+    if (!succeeded) return;
+    setReadyQuestions((current) => current.filter((question) => question.id !== resolvedId));
     setResolutionTarget(null);
   };
 
