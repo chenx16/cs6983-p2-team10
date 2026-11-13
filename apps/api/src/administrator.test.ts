@@ -59,7 +59,25 @@ describe("administrator endpoints", () => {
       newRole: Role.ORGANIZER,
       reason: "Approved to create questions",
     });
+
     expect(userCookie).toContain("access_token");
+  });
+
+  it("returns paginated administrator records and audit history", async () => {
+    const adminCookie = await register("adminuser", "admin@example.com");
+    const response = await request(app)
+      .get("/api/v1/private/admin/users?page=1&search=admin")
+      .set("Cookie", adminCookie);
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({ page: 1, pageSize: 10, total: 1, pageCount: 1 });
+    expect(response.body.users).toHaveLength(1);
+
+    const history = await request(app)
+      .get("/api/v1/private/admin/history?page=1")
+      .set("Cookie", adminCookie);
+    expect(history.status).toBe(200);
+    expect(history.body).toMatchObject({ page: 1, pageSize: 10, total: 0, pageCount: 0 });
+    expect(history.body.entries).toEqual([]);
   });
 
   it("does not allow demoting the last administrator", async () => {

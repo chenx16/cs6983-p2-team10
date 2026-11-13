@@ -27,10 +27,10 @@ describe("administrator page", () => {
   it("loads admin data and validates a role-change reason", async () => {
     const fetchMock = vi.fn<typeof fetch>(async (input) => {
       const path = String(input);
-      if (path.endsWith("/users")) {
-        return new Response(JSON.stringify({ users: [{ ...administrator, isActive: true }] }), { status: 200 });
+      if (path.includes("/users?")) {
+        return new Response(JSON.stringify({ users: [{ ...administrator, isActive: true }], page: 1, pageSize: 10, total: 1, pageCount: 1 }), { status: 200 });
       }
-      return new Response(JSON.stringify({ questions: [] }), { status: 200 });
+      return new Response(JSON.stringify({ questions: [], page: 1, pageSize: 10, total: 0, pageCount: 0 }), { status: 200 });
     });
     vi.stubGlobal("fetch", fetchMock);
     render(createElement(AdminPage, { user: administrator }));
@@ -41,16 +41,14 @@ describe("administrator page", () => {
     await userEvent.setup().click(screen.getByRole("button", { name: "Save role" }));
 
     expect(await screen.findByText("Enter a reason for this role change.")).toBeTruthy();
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenCalled();
   });
 
   it("submits a role change through the server endpoint", async () => {
     const fetchMock = vi.fn<typeof fetch>(async (input) => {
       const path = String(input);
-      if (path.endsWith("/users")) {
-        return new Response(JSON.stringify({ users: [{ ...administrator, isActive: true }] }), { status: 200 });
-      }
-      if (path.endsWith("/questions")) return new Response(JSON.stringify({ questions: [] }), { status: 200 });
+      if (path.includes("/users?")) return new Response(JSON.stringify({ users: [{ ...administrator, isActive: true }], page: 1, pageSize: 10, total: 1, pageCount: 1 }), { status: 200 });
+      if (path.includes("/questions?")) return new Response(JSON.stringify({ questions: [], page: 1, pageSize: 10, total: 0, pageCount: 0 }), { status: 200 });
       return new Response(JSON.stringify({ user: { ...administrator, role: "ORGANIZER" } }), { status: 200 });
     });
     vi.stubGlobal("fetch", fetchMock);

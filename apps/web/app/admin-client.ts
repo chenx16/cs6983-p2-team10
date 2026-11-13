@@ -13,6 +13,20 @@ export type AdminQuestion = {
   predictionCount: number;
 };
 
+export type AdminPage<T> = { page: number; pageSize: number; total: number; pageCount: number } & T;
+export type AdminHistoryEntry = {
+  id: string;
+  action: "ROLE_CHANGE" | "QUESTION_CANCELLATION";
+  previousRole: AdminUser["role"] | null;
+  newRole: AdminUser["role"] | null;
+  amount: number | null;
+  reason: string;
+  createdAt: string;
+  responsibleUser: { username: string };
+  targetUser: { username: string } | null;
+  question: { title: string } | null;
+};
+
 type ErrorPayload = { error?: { message?: string } };
 
 const request = async <T extends object>(path: string, init?: RequestInit): Promise<T> => {
@@ -24,8 +38,12 @@ const request = async <T extends object>(path: string, init?: RequestInit): Prom
   return payload as T;
 };
 
-export const getAdminUsers = () => request<{ users: AdminUser[] }>("/api/v1/private/admin/users");
-export const getAdminQuestions = () => request<{ questions: AdminQuestion[] }>("/api/v1/private/admin/questions");
+export const getAdminUsers = (page: number, search: string) =>
+  request<AdminPage<{ users: AdminUser[] }>>(`/api/v1/private/admin/users?page=${page}&search=${encodeURIComponent(search)}`);
+export const getAdminQuestions = (page: number, search: string) =>
+  request<AdminPage<{ questions: AdminQuestion[] }>>(`/api/v1/private/admin/questions?page=${page}&search=${encodeURIComponent(search)}`);
+export const getAdminHistory = (page: number) =>
+  request<AdminPage<{ entries: AdminHistoryEntry[] }>>(`/api/v1/private/admin/history?page=${page}`);
 
 export const updateUserRole = (userId: string, role: AdminUser["role"], reason: string) =>
   request<{ user: AdminUser }>(`/api/v1/private/admin/users/${userId}/role`, {

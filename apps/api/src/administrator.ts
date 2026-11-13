@@ -11,17 +11,57 @@ export class AdministratorActionError extends Error {
   }
 }
 
-export const listAdministratorUsers = () =>
-  prisma.user.findMany({
-    orderBy: { username: "asc" },
-    select: { id: true, username: true, email: true, role: true, isActive: true },
-  });
+const pageSize = (value: number | undefined) => Math.min(Math.max(value ?? 10, 1), 50);
 
-export const listAdministratorQuestions = () =>
-  prisma.question.findMany({
-    orderBy: { createdAt: "desc" },
-    select: { id: true, title: true, status: true, _count: { select: { predictions: true } } },
-  });
+export const listAdministratorUsers = async (page = 1, search = "") => {
+  const size = pageSize(undefined);
+  const where = search ? { OR: [{ username: { contains: search, mode: "insensitive" as const } }, { email: { contains: search, mode: "insensitive" as const } }] } : {};
+  const [users, total] = await prisma.$transaction([
+    prisma.user.findMany({
+      where,
+      orderBy: { username: "asc" },
+      skip: (Math.max(page, 1) - 1) * size,
+      take: size,
+      select: { id: true, username: true, email: true, role: true, isActive: true },
+    }),
+    prisma.user.count({ where }),
+  ]);
+  return { users, page: Math.max(page, 1), pageSize: size, total, pageCount: Math.ceil(total / size) };
+};
+
+export const listAdministratorQuestions = async (page = 1, search = "") => {
+  const size = pageSize(undefined);
+  const where = search ? { title: { contains: search, mode: "insensitive" as const } } : {};
+  const [questions, total] = await prisma.$transaction([
+    prisma.question.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: (Math.max(page, 1) - 1) * size,
+      take: size,
+      select: { id: true, title: true, status: true, _count: { select: { predictions: true } } },
+    }),
+    prisma.question.count({ where }),
+  ]);
+  return { questions: questions.map(({ _count, ...question }) => ({ ...question, predictionCount: _count.predictions })), page: Math.max(page, 1), pageSize: size, total, pageCount: Math.ceil(total / size) };
+};
+
+export const listAdministratorHistory = async (page = 1) => {
+  const size = pageSize(undefined);
+  const [entries, total] = await prisma.$transaction([
+    prisma.adminAudit.findMany({
+      orderBy: { createdAt: "desc" },
+      skip: (Math.max(page, 1) - 1) * size,
+      take: size,
+      include: {
+        responsibleUser: { select: { username: true } },
+        targetUser: { select: { username: true } },
+        question: { select: { title: true } },
+      },
+    }),
+    prisma.adminAudit.count(),
+  ]);
+  return { entries, page: Math.max(page, 1), pageSize: size, total, pageCount: Math.ceil(total / size) };
+};
 
 export const changeUserRole = async (
   targetUserId: string,

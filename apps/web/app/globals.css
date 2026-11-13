@@ -83,6 +83,12 @@ h1 { font-size: 1.625rem; letter-spacing: -.015em; line-height: 1.2; margin: 0; 
 .admin-panel { min-width: 0; }
 .admin-panel h2 { margin: 0; }
 .admin-list { display: grid; gap: 12px; margin-top: 18px; }
+.admin-tabs { border-bottom: 1px solid var(--line); display: flex; gap: 6px; margin-bottom: 16px; }
+.admin-tabs button { background: transparent; border: 0; border-bottom: 2px solid transparent; color: var(--muted); font-weight: 600; padding: 10px 12px; }
+.admin-tabs button[aria-selected=true] { border-bottom-color: var(--accent); color: var(--ink); }
+.admin-search { align-items: end; display: flex; gap: 8px; margin-top: 16px; }
+.admin-search label { color: var(--muted); display: grid; flex: 1; font-size: .75rem; font-weight: 600; gap: 5px; }
+.admin-search input { background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; color: var(--ink); padding: 8px 10px; }
 .admin-row { border-top: 1px solid var(--line); display: grid; gap: 10px; padding-top: 14px; }
 .admin-row > div { display: grid; gap: 2px; min-width: 0; }
 .admin-row label { color: var(--muted); display: grid; font-size: .75rem; font-weight: 600; gap: 5px; }
@@ -91,6 +97,12 @@ h1 { font-size: 1.625rem; letter-spacing: -.015em; line-height: 1.2; margin: 0; 
 .success-message { color: var(--yes); font-size: .8125rem; }
 .access-panel { margin: 48px auto; max-width: 620px; }
 .standalone-loading { align-items: center; display: flex; justify-content: center; min-height: 100vh; }
+.admin-pager { align-items: center; border-top: 1px solid var(--line); color: var(--muted); display: flex; font-size: .8125rem; justify-content: space-between; margin-top: 18px; padding-top: 14px; }
+.admin-pager div { display: flex; gap: 6px; }
+.history-list { display: grid; gap: 10px; margin-top: 18px; }
+.history-entry { border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+.history-entry > div { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; }
+.history-entry p { margin: 6px 0 0; }
 .button { background: transparent; border: 1px solid var(--line); border-radius: 10px; color: var(--ink); font-weight: 600; padding: 9px 14px; }
 .button-primary { background: var(--accent); border-color: var(--accent); color: white; }
 .button-primary:hover { filter: brightness(1.08); }

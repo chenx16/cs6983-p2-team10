@@ -4,7 +4,7 @@ import rateLimit from "express-rate-limit";
 import swaggerUi from "swagger-ui-express";
 import { healthResponseSchema, loginRequestSchema, questionCancellationRequestSchema, registerRequestSchema, roleChangeRequestSchema } from "@forecasthub/shared";
 import { authenticateUser, clearAuthCookie, createAccessToken, publicUser, registerUser, requireAdministrator, requireAuth, setAuthCookie, type AuthenticatedRequest } from "./auth.js";
-import { AdministratorActionError, cancelQuestion, changeUserRole, listAdministratorQuestions, listAdministratorUsers } from "./administrator.js";
+import { AdministratorActionError, cancelQuestion, changeUserRole, listAdministratorHistory, listAdministratorQuestions, listAdministratorUsers } from "./administrator.js";
 import { env } from "./env.js";
 import { prisma } from "./prisma.js";
 import { placePrediction, previewPrediction } from "./predictions.js";
@@ -326,7 +326,9 @@ export const createApp = () => {
 
   app.get("/api/v1/private/admin/users", requireAuth, requireAdministrator, async (_request, response, next) => {
     try {
-      response.json({ users: await listAdministratorUsers() });
+      const page = Number(_request.query.page) || 1;
+      const search = typeof _request.query.search === "string" ? _request.query.search.trim().slice(0, 100) : "";
+      response.json(await listAdministratorUsers(page, search));
     } catch (error) {
       next(error);
     }
@@ -334,8 +336,18 @@ export const createApp = () => {
 
   app.get("/api/v1/private/admin/questions", requireAuth, requireAdministrator, async (_request, response, next) => {
     try {
-      const questions = await listAdministratorQuestions();
-      response.json({ questions: questions.map(({ _count, ...question }) => ({ ...question, predictionCount: _count.predictions })) });
+      const page = Number(_request.query.page) || 1;
+      const search = typeof _request.query.search === "string" ? _request.query.search.trim().slice(0, 100) : "";
+      response.json(await listAdministratorQuestions(page, search));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/v1/private/admin/history", requireAuth, requireAdministrator, async (request, response, next) => {
+    try {
+      const page = Number(request.query.page) || 1;
+      response.json(await listAdministratorHistory(page));
     } catch (error) {
       next(error);
     }
