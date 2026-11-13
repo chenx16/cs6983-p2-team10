@@ -63,6 +63,7 @@ const preview = {
 const paths = {
   question: "/api/v1/public/questions/question-1",
   me: "/api/v1/private/me",
+  logout: "/api/v1/auth/logout",
   predictions: "/api/v1/private/questions/question-1/predictions",
   preview: "/api/v1/private/questions/question-1/predictions/preview",
 };
@@ -78,9 +79,11 @@ type FetchMock = ReturnType<typeof vi.fn<typeof fetch>>;
 const installApi = (options: {
   signedIn?: boolean;
   questionResponse?: Response;
+  previewResponse?: typeof preview;
   place?: (request: RequestInit) => Promise<Response>;
 } = {}) => {
   let placed = false;
+  let signedIn = options.signedIn !== false;
   const fetchMock = vi.fn<typeof fetch>(async (input, init) => {
     const path = String(input);
     if (path === paths.question) {
@@ -93,11 +96,15 @@ const installApi = (options: {
       } : question);
     }
     if (path === paths.me) {
-      return options.signedIn === false
+      return !signedIn
         ? json({ error: { code: "UNAUTHENTICATED", message: "Authentication is required." } }, 401)
         : json({ user: placed ? { ...user, balance: 792 } : user });
     }
-    if (path === paths.preview) return json(preview);
+    if (path === paths.logout && init?.method === "POST") {
+      signedIn = false;
+      return new Response(null, { status: 204 });
+    }
+    if (path === paths.preview) return json(options.previewResponse ?? preview);
     if (path === paths.predictions && init?.method === "POST") {
       if (!options.place) throw new Error("Unexpected prediction submission");
       const response = await options.place(init);
@@ -117,6 +124,12 @@ const requestsFor = (fetchMock: FetchMock, path: string, method?: string) =>
   fetchMock.mock.calls.filter(([input, init]) =>
     String(input) === path && (!method || (init?.method ?? "GET") === method),
   );
+
+const predictionPanel = () =>
+  screen.getByRole("heading", { name: /make a prediction/i }).closest("aside")!;
+
+const sidebar = () =>
+  screen.getByRole("navigation", { name: /primary navigation/i }).closest("aside")!;
 
 const renderPage = async () => {
   const loadPage = pages["./questions/[id]/page.tsx"];
@@ -176,6 +189,19 @@ describe("question detail and prediction panel", () => {
     expect((screen.getByRole("radio", { name: /no/i }) as HTMLInputElement).checked).toBe(true);
   });
 
+  it.each([
+    ["no answer parameter", ""],
+    ["an answer label instead of an ID", "?answer=Yes"],
+    ["an unknown answer ID", "?answer=unknown-id"],
+  ])("selects the first answer by default with %s", async (_description, query) => {
+    window.history.replaceState({}, "", `/questions/question-1${query}`);
+    installApi();
+    await renderPage();
+    await screen.findByRole("heading", { name: question.title });
+    expect((screen.getByRole("radio", { name: /yes/i }) as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByRole("radio", { name: /no/i }) as HTMLInputElement).checked).toBe(false);
+  });
+
   it("prompts visitors to sign in before predicting", async () => {
     const fetchMock = installApi({ signedIn: false });
     await renderPage();
@@ -187,7 +213,7 @@ describe("question detail and prediction panel", () => {
     installApi();
     await renderPage();
     const section = await screen.findByRole("region", { name: /your predictions/i });
-    expect(screen.getByText(/1,000/)).toBeTruthy();
+    expect(within(predictionPanel()).getByText(/1,000/)).toBeTruthy();
     expect(within(section).getByText(/yes/i)).toBeTruthy();
     expect(within(section).getByText(/208/)).toBeTruthy();
     expect(within(section).getByText(/3\.54/)).toBeTruthy();
@@ -211,6 +237,51 @@ describe("question detail and prediction panel", () => {
     const previewSection = screen.getByRole("region", { name: /preview/i });
     expect(within(previewSection).getByText(/3\.54/)).toBeTruthy();
     expect(within(previewSection).getByText(/208/)).toBeTruthy();
+  });
+
+  it.each([
+    [56.17977528089887, "56.2"],
+    [50, "50.0"],
+  ])("formats the preview average price %s as %s", async (averagePrice, displayedPrice) => {
+    installApi({ previewResponse: { ...preview, averagePrice } });
+    await renderPage();
+    await screen.findByRole("heading", { name: question.title });
+    await userEvent.click(screen.getByRole("radio", { name: /yes/i }));
+    fireEvent.change(screen.getByLabelText(/credits to spend/i), { target: { value: "208" } });
+    const previewSection = await screen.findByRole("region", { name: /preview/i });
+    expect(within(previewSection).getByText(`Average price: ${displayedPrice}`)).toBeTruthy();
+  });
+
+  it("shows account details in the sidebar and signs out from the detail page", async () => {
+    const fetchMock = installApi();
+    await renderPage();
+    await screen.findByRole("heading", { name: question.title });
+    const account = within(sidebar());
+    expect(account.getByText(user.username)).toBeTruthy();
+    expect(account.getByText(/1,000 credits/i)).toBeTruthy();
+    await userEvent.click(account.getByRole("button", { name: /sign out/i }));
+    await screen.findByText(/sign in to predict/i);
+    expect(requestsFor(fetchMock, paths.logout, "POST")).toHaveLength(1);
+    expect(screen.queryByRole("region", { name: /your predictions/i })).toBeNull();
+    expect(within(sidebar()).queryByText(user.username)).toBeNull();
+  });
+
+  it("updates the sidebar balance after a successful prediction", async () => {
+    installApi({
+      place: async () => json({
+        prediction: {
+          id: "prediction-1", answerId: "answer-a", shares: 354, creditsCharged: 208,
+          priceA: 67, priceB: 33, createdAt: prediction.createdAt,
+        },
+        balance: 792,
+      }, 201),
+    });
+    await renderPage();
+    await preparePreview();
+    expect(within(sidebar()).getByText(/1,000 credits/i)).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: /confirm prediction/i }));
+    expect(await within(sidebar()).findByText(/792 credits/i)).toBeTruthy();
+    expect(within(sidebar()).queryByText(/1,000 credits/i)).toBeNull();
   });
 
   it("shows the new preview after a price change and requires another confirmation", async () => {
@@ -271,7 +342,7 @@ describe("question detail and prediction panel", () => {
       },
       balance: 792,
     }, 201));
-    await screen.findByText(/792/);
+    await within(predictionPanel()).findByText(/792/);
   });
 
   it("refreshes balance, crowd prices and personal predictions after a successful placement", async () => {
@@ -287,7 +358,7 @@ describe("question detail and prediction panel", () => {
     await renderPage();
     await preparePreview();
     await userEvent.click(screen.getByRole("button", { name: /confirm prediction/i }));
-    await screen.findByText(/792/);
+    await within(predictionPanel()).findByText(/792/);
     expect(await screen.findByText(/70%/)).toBeTruthy();
     const section = await screen.findByRole("region", { name: /your predictions/i });
     expect(await within(section).findByText(/300/)).toBeTruthy();
