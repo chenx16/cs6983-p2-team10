@@ -89,6 +89,20 @@ npm test
 npm run build
 ```
 
+API integration tests use the separate local PostgreSQL database
+`forecasthub_test`, configured in `apps/api/.env.test`. Create that ignored
+file from the safe local template, then apply the existing Prisma migrations:
+
+```bash
+cp apps/api/.env.test.example apps/api/.env.test
+set -a && source apps/api/.env.test && set +a
+DATABASE_URL="$DATABASE_URL_TEST" npm exec --workspace=@forecasthub/api -- prisma migrate deploy
+```
+
+The development database is not used or cleared by tests. Test cleanup refuses
+to run unless the configured database is local/CI test infrastructure and its
+name ends in `_test`.
+
 Database commands:
 
 ```bash

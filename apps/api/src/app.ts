@@ -6,6 +6,7 @@ import { healthResponseSchema, loginRequestSchema, registerRequestSchema } from 
 import { authenticateUser, clearAuthCookie, createAccessToken, publicUser, registerUser, requireAuth, setAuthCookie, type AuthenticatedRequest } from "./auth.js";
 import { env } from "./env.js";
 import { prisma } from "./prisma.js";
+import { placePrediction, previewPrediction } from "./predictions.js";
 
 const openApiDocument = {
   openapi: "3.0.3",
@@ -137,6 +138,22 @@ export const createApp = () => {
         return;
       }
       response.json({ user: publicUser(user) });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/v1/private/questions/:questionId/predictions/preview", requireAuth, async (request: AuthenticatedRequest, response, next) => {
+    try {
+      await previewPrediction(request, response);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/v1/private/questions/:questionId/predictions", requireAuth, async (request: AuthenticatedRequest, response, next) => {
+    try {
+      await placePrediction(request, response);
     } catch (error) {
       next(error);
     }
