@@ -149,6 +149,13 @@ questions, and closing an open question after its deadline. Finalization closes
 the question; selecting a correct answer and issuing payouts are separate
 resolution workflows.
 
+The Organizer workspace is divided into three tabs:
+
+- **My Questions** lists questions created by the signed-in Organizer.
+- **Edit Drafts** contains the new-draft form and editable draft questions.
+- **Resolve** lists eligible questions after their deadlines and provides the
+  answer selector and evidence-note form for resolution.
+
 The public Arena loads `GET /api/v1/public/questions`. This endpoint returns
 only visible, published A/B questions with `OPEN` status and deadlines still
 in the future, ordered by the soonest deadline. Expired or unpublished

@@ -9,10 +9,10 @@ export type OrganizerQuestion = {
   outcomeCriteria: string;
   source: string;
   category: { name: string };
-  answers: { text: string }[];
+  answers: { id?: string; text: string }[];
   _count: { predictions: number };
 };
-export type ReadyQuestion = OrganizerQuestion & { answers: { id: string; text: string }[] };
+export type ReadyQuestion = Omit<OrganizerQuestion, "answers"> & { answers: { id: string; text: string }[] };
 
 type ErrorPayload = { error?: { message?: string } };
 const request = async <T extends object>(path: string, init?: RequestInit): Promise<T> => {
