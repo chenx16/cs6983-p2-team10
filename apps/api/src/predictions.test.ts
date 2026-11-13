@@ -63,6 +63,96 @@ const createScenario = async () => {
 };
 
 describe("prediction preview and placement", () => {
+  it("rate limits preview per user without consuming the placement limit", async () => {
+    const scenario = await createScenario();
+    const previewPath = `/api/v1/private/questions/${scenario.question.id}/predictions/preview`;
+    const placementPath = `/api/v1/private/questions/${scenario.question.id}/predictions`;
+    const registration = await request(scenario.app).post("/api/v1/auth/register").send({
+      username: "other-user",
+      email: "other@example.com",
+      password: "CorrectHorse1",
+    });
+    expect(registration.status).toBe(201);
+    const otherCookie = registration.headers["set-cookie"]?.[0];
+    expect(otherCookie).toBeDefined();
+
+    for (let count = 0; count < 120; count++) {
+      const response = await request(scenario.app)
+        .post(previewPath)
+        .set("Cookie", scenario.cookie!)
+        .send({});
+      expect(response.status).toBe(422);
+    }
+
+    const limited = await request(scenario.app)
+      .post(previewPath)
+      .set("Cookie", scenario.cookie!)
+      .send({});
+    expect(limited.status).toBe(429);
+    expect(limited.body.error.code).toBe("RATE_LIMITED");
+    expect(Number(limited.headers["retry-after"])).toBeGreaterThan(0);
+
+    const otherUser = await request(scenario.app)
+      .post(previewPath)
+      .set("Cookie", otherCookie!)
+      .send({});
+    expect(otherUser.status).toBe(422);
+
+    const unauthenticated = await request(scenario.app).post(previewPath).send({});
+    expect(unauthenticated.status).toBe(401);
+
+    const placement = await request(scenario.app)
+      .post(placementPath)
+      .set("Cookie", scenario.cookie!)
+      .send({});
+    expect(placement.status).toBe(422);
+  });
+
+  it("rate limits placement per user without consuming the preview limit", async () => {
+    const scenario = await createScenario();
+    const previewPath = `/api/v1/private/questions/${scenario.question.id}/predictions/preview`;
+    const placementPath = `/api/v1/private/questions/${scenario.question.id}/predictions`;
+    const registration = await request(scenario.app).post("/api/v1/auth/register").send({
+      username: "other-user",
+      email: "other@example.com",
+      password: "CorrectHorse1",
+    });
+    expect(registration.status).toBe(201);
+    const otherCookie = registration.headers["set-cookie"]?.[0];
+    expect(otherCookie).toBeDefined();
+
+    for (let count = 0; count < 120; count++) {
+      const response = await request(scenario.app)
+        .post(placementPath)
+        .set("Cookie", scenario.cookie!)
+        .send({});
+      expect(response.status).toBe(422);
+    }
+
+    const limited = await request(scenario.app)
+      .post(placementPath)
+      .set("Cookie", scenario.cookie!)
+      .send({});
+    expect(limited.status).toBe(429);
+    expect(limited.body.error.code).toBe("RATE_LIMITED");
+    expect(Number(limited.headers["retry-after"])).toBeGreaterThan(0);
+
+    const otherUser = await request(scenario.app)
+      .post(placementPath)
+      .set("Cookie", otherCookie!)
+      .send({});
+    expect(otherUser.status).toBe(422);
+
+    const unauthenticated = await request(scenario.app).post(placementPath).send({});
+    expect(unauthenticated.status).toBe(401);
+
+    const preview = await request(scenario.app)
+      .post(previewPath)
+      .set("Cookie", scenario.cookie!)
+      .send({});
+    expect(preview.status).toBe(422);
+  });
+
   it("previews and places an A/B prediction atomically", async () => {
     const scenario = await createScenario();
     const preview = await request(scenario.app)
