@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   apiErrorSchema,
   myQuestionPredictionsResponseSchema,
@@ -13,7 +13,8 @@ import {
   type QuestionDetailResponse,
 } from "@forecasthub/shared";
 import { AuthPage } from "../../auth-page";
-import { getCurrentUser, type AuthUser } from "../../auth-client";
+import { getCurrentUser, logout, type AuthUser } from "../../auth-client";
+import { AppShell, type AuthMode } from "../../app-shell";
 
 type PreviewSelection = {
   answerId: string;
@@ -71,6 +72,7 @@ const creditsText = (credits: number) => credits.toLocaleString("en-US");
 
 export default function QuestionDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const questionPath = `/api/v1/public/questions/${encodeURIComponent(id)}`;
   const predictionsPath = `/api/v1/private/questions/${encodeURIComponent(id)}/predictions`;
   const previewPath = `${predictionsPath}/preview`;
@@ -82,6 +84,7 @@ export default function QuestionDetailPage() {
   const [pageError, setPageError] = useState("");
   const [privateError, setPrivateError] = useState("");
   const [authView, setAuthView] = useState(false);
+  const [authMode, setAuthMode] = useState<AuthMode>("login");
   const [answerId, setAnswerId] = useState("");
   const [amount, setAmount] = useState("");
   const [preview, setPreview] = useState<PreviewSelection | null>(null);
@@ -115,9 +118,9 @@ export default function QuestionDetailPage() {
       setQuestion(detail);
       setUser(currentUser);
       const requestedAnswer = new URLSearchParams(window.location.search).get("answer");
-      if (detail.answers.some((answer) => answer.id === requestedAnswer)) {
-        setAnswerId(requestedAnswer ?? "");
-      }
+      const selectedAnswer = detail.answers.find((answer) => answer.id === requestedAnswer) ?? detail.answers[0];
+      if (!selectedAnswer) throw new Error("This question has no available answers.");
+      setAnswerId(selectedAnswer.id);
       setLoading(false);
       if (currentUser) {
         try {
@@ -241,7 +244,10 @@ export default function QuestionDetailPage() {
         setFormError(retrying && (error.code === "QUESTION_CLOSED" || error.code === "QUESTION_NOT_OPEN")
           ? `${error.message} The earlier submission could not be verified; contact support before trying again.`
           : error.message);
-        if (retrying && error.status === 401) setAuthView(true);
+        if (retrying && error.status === 401) {
+          setAuthMode("login");
+          setAuthView(true);
+        }
       } else {
         setPending(request);
         setFormError("A network or server error interrupted confirmation. Retry to safely check the same prediction.");
@@ -279,21 +285,29 @@ export default function QuestionDetailPage() {
     }
   }
 
-  if (authView) return <AuthPage initialMode="login" onAuthenticated={finishAuthentication} />;
+  async function handleSignOut() {
+    try {
+      await logout();
+      setUser(null);
+      setPredictions([]);
+      setPageError("");
+      setPrivateError("");
+    } catch (error) {
+      setPageError(error instanceof Error ? error.message : "Unable to sign out.");
+    }
+  }
+
+  if (authView) return <AuthPage initialMode={authMode} onAuthenticated={finishAuthentication} />;
 
   return (
-    <div className="app-shell">
-      <aside className="sidebar">
-        <a className="brand" href="/"><span className="brand-mark">↗</span> ForecastHub</a>
-        <nav aria-label="Primary navigation" className="nav-links">
-          <a className="active" href="/">Arena</a>
-        </nav>
-        <div className="sidebar-bottom">
-          <p>Credits are virtual and free.</p>
-        </div>
-      </aside>
-      <div className="mobile-bar"><a className="brand" href="/"><span className="brand-mark">↗</span> ForecastHub</a><a href="/">Arena</a></div>
-      <main className="main-content">
+    <AppShell
+      view="arena"
+      user={user}
+      signOutDisabled={submitting || Boolean(pending)}
+      onNavigate={(view) => router.push(view === "leaderboard" ? "/?view=leaderboard" : "/")}
+      onAuthNavigate={(mode) => { setAuthMode(mode); setAuthView(true); }}
+      onSignOut={() => { void handleSignOut(); }}
+    >
         <a className="back-link detail-back-link" href="/">← Back to Arena</a>
         {loading && <p role="status">Loading question…</p>}
         {notFound && <div className="empty-state"><strong>Question not found.</strong></div>}
@@ -357,7 +371,7 @@ export default function QuestionDetailPage() {
                     {pending && !serverClosed && <p className="error-message" role="alert">Your earlier submission could not be verified before the deadline. Contact support before trying again.</p>}
                   </>
                 ) : !user ? (
-                  <button className="button button-primary" onClick={() => setAuthView(true)} type="button">Sign in to predict</button>
+                  <button className="button button-primary" onClick={() => { setAuthMode("login"); setAuthView(true); }} type="button">Sign in to predict</button>
                 ) : (
                   <>
                     <fieldset disabled={submitting || Boolean(pending)}>
@@ -382,7 +396,7 @@ export default function QuestionDetailPage() {
                         <strong id="preview-heading">Preview</strong>
                         <span>{sharesText(preview.result.shares)} shares</span>
                         <span>Charge: {creditsText(preview.result.charge)} credits</span>
-                        <span>Average price: {preview.result.averagePrice}</span>
+                        <span>Average price: {preview.result.averagePrice.toFixed(1)}</span>
                         <span>Prices after prediction: {preview.result.prices.a} / {preview.result.prices.b}</span>
                         <span>{creditsText(preview.result.payoutIfCorrect)} credits if correct</span>
                       </section>
@@ -401,7 +415,6 @@ export default function QuestionDetailPage() {
             </div>
           </>
         )}
-      </main>
-    </div>
+    </AppShell>
   );
 }
