@@ -114,6 +114,18 @@ npm run db:migrate
 npm run db:seed
 ```
 
+Administrator actions require an authenticated Administrator session:
+
+```text
+PATCH /api/v1/private/admin/users/:userId/role
+POST  /api/v1/private/admin/questions/:questionId/cancel
+```
+
+Role changes require a target role and reason. Question cancellation requires a
+reason; each original prediction charge is refunded in a transaction, and role
+changes, cancellation, and refund records retain the responsible account and
+reason for auditability. The last active Administrator cannot be demoted.
+
 ## Environments
 
 ForecastHub uses separate local, preview, and production environments:

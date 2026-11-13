@@ -36,6 +36,11 @@ enum LedgerType {
   CORRECTION
 }
 
+enum AdminAuditAction {
+  ROLE_CHANGE
+  QUESTION_CANCELLATION
+}
+
 model User {
   id           String   @id @default(cuid())
   username     String   @unique
@@ -51,6 +56,8 @@ model User {
   predictions        Prediction[]
   ledgerEntries      CreditLedger[]
   responsibleEntries CreditLedger[] @relation("LedgerResponsibleUser")
+  adminAudits        AdminAudit[]    @relation("AuditResponsibleUser")
+  roleChanges        AdminAudit[]    @relation("AuditTargetUser")
 }
 
 model Category {
@@ -90,10 +97,32 @@ model Question {
   correctAnswer Answer?         @relation("QuestionCorrectAnswer", fields: [correctAnswerId], references: [id])
   predictions   Prediction[]
   snapshots     PriceSnapshot[]
+  adminAudits   AdminAudit[]
 
   @@index([status, deadline])
   @@index([categoryId, status])
   @@index([organizerId, status])
+}
+
+model AdminAudit {
+  id                String           @id @default(cuid())
+  action            AdminAuditAction
+  targetUserId      String?
+  questionId        String?
+  previousRole      Role?
+  newRole           Role?
+  amount            Int?
+  reason            String
+  responsibleUserId String
+  createdAt         DateTime         @default(now())
+
+  responsibleUser User      @relation("AuditResponsibleUser", fields: [responsibleUserId], references: [id])
+  targetUser      User?     @relation("AuditTargetUser", fields: [targetUserId], references: [id])
+  question        Question? @relation(fields: [questionId], references: [id])
+
+  @@index([targetUserId, createdAt])
+  @@index([questionId, createdAt])
+  @@index([responsibleUserId, createdAt])
 }
 
 model Answer {

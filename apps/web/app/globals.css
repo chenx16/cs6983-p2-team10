@@ -79,6 +79,18 @@ h1 { font-size: 1.625rem; letter-spacing: -.015em; line-height: 1.2; margin: 0; 
 .privacy-note, .fine-print { color: var(--muted); font-size: .8125rem; }
 .empty-state { border: 1px dashed var(--line); border-radius: 16px; color: var(--muted); margin-top: 16px; padding: 40px; text-align: center; }
 .empty-state strong { color: var(--ink); display: block; margin-bottom: 6px; }
+.admin-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
+.admin-panel { min-width: 0; }
+.admin-panel h2 { margin: 0; }
+.admin-list { display: grid; gap: 12px; margin-top: 18px; }
+.admin-row { border-top: 1px solid var(--line); display: grid; gap: 10px; padding-top: 14px; }
+.admin-row > div { display: grid; gap: 2px; min-width: 0; }
+.admin-row label { color: var(--muted); display: grid; font-size: .75rem; font-weight: 600; gap: 5px; }
+.admin-row input, .admin-row select { background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; color: var(--ink); min-width: 0; padding: 8px 10px; }
+.button-danger { border-color: var(--no); color: var(--no); }
+.success-message { color: var(--yes); font-size: .8125rem; }
+.access-panel { margin: 48px auto; max-width: 620px; }
+.standalone-loading { align-items: center; display: flex; justify-content: center; min-height: 100vh; }
 .button { background: transparent; border: 1px solid var(--line); border-radius: 10px; color: var(--ink); font-weight: 600; padding: 9px 14px; }
 .button-primary { background: var(--accent); border-color: var(--accent); color: white; }
 .button-primary:hover { filter: brightness(1.08); }
