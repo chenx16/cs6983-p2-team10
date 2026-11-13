@@ -83,6 +83,7 @@ h1 { font-size: 1.625rem; letter-spacing: -.015em; line-height: 1.2; margin: 0; 
 .button-primary { background: var(--accent); border-color: var(--accent); color: white; }
 .button-primary:hover { filter: brightness(1.08); }
 .back-link { background: none; border: 0; color: var(--accent); font-weight: 600; margin: 20px 0 12px; padding: 0; }
+.detail-back-link { display: inline-block; text-decoration: none; }
 .detail-heading { margin-bottom: 18px; }
 .detail-heading h1 { font-size: clamp(1.375rem, 3vw, 1.875rem); max-width: 32ch; }
 .muted { color: var(--muted); margin: 6px 0 0; }
@@ -119,6 +120,9 @@ legend, .field-label { display: block; font-size: .875rem; font-weight: 600; mar
 .preview-box strong { color: var(--ink); }
 .prediction-panel > .button { width: 100%; }
 .fine-print { text-align: center; }
+.personal-predictions { display: grid; gap: 12px; list-style: none; margin: 0; padding: 0; }
+.personal-predictions li { border-top: 1px solid var(--line); display: grid; gap: 4px; padding-top: 12px; }
+.personal-predictions li span, .personal-predictions time { color: var(--muted); font-size: .875rem; }
 .leaderboard-panel { overflow-x: auto; }
 table { border-collapse: collapse; width: 100%; }
 th, td { border-bottom: 1px solid var(--line); padding: 12px; text-align: left; white-space: nowrap; }

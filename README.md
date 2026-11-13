@@ -79,6 +79,8 @@ preserved. For the deployed Vercel web app, set both `NEXT_PUBLIC_API_URL` and
 `API_URL` to the deployed Render API URL.
 The Swagger UI uses a relative API server URL, so its “Try it out” requests
 work against whichever API host serves the documentation.
+The web development and build scripts compile the shared API contracts first;
+after changing shared contracts during development, rebuild that workspace.
 
 ## Validation commands
 
