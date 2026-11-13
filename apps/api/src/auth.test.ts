@@ -19,6 +19,36 @@ afterAll(async () => {
 });
 
 describe("authentication routes", () => {
+  it("rejects registration with a non-alphanumeric username without creating an account", async () => {
+    const response = await request(createApp()).post("/api/v1/auth/register").send({
+      username: "用户123",
+      email: "invalidname@example.com",
+      password: "CorrectHorse1",
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error.code).toBe("INVALID_INPUT");
+    expect(await prisma.user.count()).toBe(0);
+  });
+
+  it("allows existing users with previously valid usernames to sign in", async () => {
+    const { default: bcrypt } = await import("bcrypt");
+    await prisma.user.create({
+      data: {
+        username: "old-user",
+        email: "existing@example.com",
+        passwordHash: await bcrypt.hash("CorrectHorse1", 12),
+      },
+    });
+
+    const response = await request(createApp()).post("/api/v1/auth/login").send({
+      identifier: "old-user",
+      password: "CorrectHorse1",
+    });
+    expect(response.status).toBe(200);
+    expect(response.body.user.username).toBe("old-user");
+  });
+
   it("registers the first account as an administrator with 1,000 credits", async () => {
     const response = await request(createApp())
       .post("/api/v1/auth/register")

@@ -26,6 +26,28 @@ describe("authentication contracts", () => {
     })).toThrow();
   });
 
+  it.each(["User123", "abc", "ABC", "123", "a1"])(
+    "accepts the alphanumeric username %s",
+    (username) => {
+      expect(registerRequestSchema.safeParse({
+        username,
+        email: "person@example.com",
+        password: "CorrectHorse1",
+      }).success).toBe(true);
+    },
+  );
+
+  it.each(["用户名", "用户123", "éclair", "user-name", "user_name", "user name", "user!"])(
+    "rejects the username %s with characters outside ASCII letters and digits",
+    (username) => {
+      expect(registerRequestSchema.safeParse({
+        username,
+        email: "person@example.com",
+        password: "CorrectHorse1",
+      }).success).toBe(false);
+    },
+  );
+
   it("requires at least 8 characters with letters and numbers", () => {
     expect(() => registerRequestSchema.parse({
       username: "forecastor",
