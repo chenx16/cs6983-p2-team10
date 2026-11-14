@@ -9,7 +9,7 @@ import { AppShell, type AuthMode, type View } from "./app-shell";
 import { AdminPage } from "./admin-page";
 import { OrganizerPage } from "./organizer-page";
 import { getCategories, type OrganizerCategory } from "./organizer-client";
-import { arenaQuestionsResponseSchema, predictionHistoryResponseSchema, type ArenaFilters, type ArenaQuestionResponse, type PredictionHistoryResponse } from "@forecasthub/shared";
+import { arenaQuestionsResponseSchema, leaderboardResponseSchema, predictionHistoryResponseSchema, type ArenaFilters, type ArenaQuestionResponse, type LeaderboardResponse, type PredictionHistoryResponse } from "@forecasthub/shared";
 
 const statusFilters: { value: ArenaFilters["status"]; label: string }[] = [
   { value: "OPEN", label: "Open" },
@@ -17,13 +17,6 @@ const statusFilters: { value: ArenaFilters["status"]; label: string }[] = [
   { value: "CLOSED", label: "Closed" },
   { value: "RESOLVED", label: "Resolved" },
   { value: "CANCELLED", label: "Cancelled" },
-];
-
-const leaderboard = [
-  { rank: 1, username: "forecastfox", scored: 42, success: "78%" },
-  { rank: 2, username: "northstar", scored: 39, success: "74%" },
-  { rank: 3, username: "qiongwu", scored: 31, success: "71%" },
-  { rank: 4, username: "signalhouse", scored: 28, success: "68%" },
 ];
 
 function Icon({ children }: { children: React.ReactNode }) {
@@ -140,7 +133,31 @@ function SignIn({ mode, onBack }: { mode: AuthMode; onBack: () => void | Promise
 }
 
 function Leaderboard() {
-  return <><div className="breadcrumbs">ForecastHub <span>›</span> <b>Leaderboard</b></div><div className="page-heading"><div><p className="eyebrow">All time</p><h1>Forecast well. Learn publicly.</h1></div></div><div className="panel leaderboard-panel"><table><caption className="sr-only">ForecastHub leaderboard</caption><thead><tr><th>Rank</th><th>Username</th><th>Scored questions</th><th>Success rate</th></tr></thead><tbody>{leaderboard.map((row) => <tr key={row.username}><td>{row.rank}</td><td><strong>{row.username}</strong></td><td>{row.scored}</td><td>{row.success}</td></tr>)}</tbody></table></div></>;
+  const [leaderboard, setLeaderboard] = useState<LeaderboardResponse["entries"]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    void fetch("/api/v1/public/leaderboard", { credentials: "include" })
+      .then(async (response) => {
+        const payload: unknown = await response.json();
+        if (!response.ok) throw new Error("Unable to load the leaderboard.");
+        return leaderboardResponseSchema.parse(payload);
+      })
+      .then((payload) => {
+        if (active) setLeaderboard(payload.entries);
+      })
+      .catch((requestError: unknown) => {
+        if (active) setError(requestError instanceof Error ? requestError.message : "Unable to load the leaderboard.");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => { active = false; };
+  }, []);
+
+  return <><div className="breadcrumbs">ForecastHub <span>›</span> <b>Leaderboard</b></div><div className="page-heading"><div><p className="eyebrow">All time</p><h1>Forecast well. Learn publicly.</h1></div></div><div className="panel leaderboard-panel"><table><caption className="sr-only">ForecastHub leaderboard</caption><thead><tr><th>Rank</th><th>Username</th><th>Scored questions</th><th>Success rate</th></tr></thead><tbody>{loading ? <tr><td colSpan={4}>Loading leaderboard…</td></tr> : error ? <tr><td colSpan={4} className="error-message">{error}</td></tr> : leaderboard.length === 0 ? <tr><td colSpan={4}>No resolved predictions yet.</td></tr> : leaderboard.map((row) => <tr key={row.username}><td>{row.rank ?? "Not ranked yet"}</td><td><strong>{row.username}</strong></td><td>{row.scoredQuestions}</td><td>{row.successRate}%</td></tr>)}</tbody></table></div></>;
 }
 
 function PredictionHistory() {

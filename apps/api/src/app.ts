@@ -12,6 +12,7 @@ import { placePrediction, previewPrediction } from "./predictions.js";
 import { getMyPredictionHistory, getMyQuestionPredictions, getPublicQuestionDetail, listPublicArenaQuestions } from "./question-detail.js";
 import { listReadyToResolve, resolveAbQuestion, ResolutionError } from "./resolution.js";
 import { resolveAbQuestionRequestSchema } from "@forecasthub/shared";
+import { getPublicLeaderboard } from "./leaderboard.js";
 
 const openApiDocument = {
   openapi: "3.0.3",
@@ -62,6 +63,16 @@ const openApiDocument = {
               },
               "404": { description: "Question not found." },
               "429": { description: "Rate limit exceeded." },
+            },
+          },
+          "/api/v1/public/leaderboard": {
+            get: {
+              summary: "Get the public forecasting leaderboard",
+              description: "Returns ranked active users using resolved A/B predictions. Balances and net gain are never included.",
+              responses: {
+                "200": { description: "Public leaderboard entries." },
+                "429": { description: "Rate limit exceeded." },
+              },
             },
           },
         },
@@ -279,6 +290,14 @@ export const createApp = () => {
   app.get("/api/v1/public/questions/:questionId", publicQuestionDetailRateLimit, async (request: AuthenticatedRequest, response, next) => {
     try {
       await getPublicQuestionDetail(request, response);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/v1/public/leaderboard", publicQuestionDetailRateLimit, async (_request, response, next) => {
+    try {
+      response.json(await getPublicLeaderboard());
     } catch (error) {
       next(error);
     }

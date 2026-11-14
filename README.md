@@ -136,6 +136,18 @@ and a timestamp displayed in Pacific Time, plus pending, won, lost, or
 refunded settlement status. It never exposes
 another user's predictions.
 
+The public leaderboard loads:
+
+```text
+GET   /api/v1/public/leaderboard
+```
+
+It exposes only rank, username, scored questions, and whole-number success
+rate. A question counts as correct only when more than half of the user's
+credits on that resolved A/B question were on the correct answer. Cancelled
+questions do not count. Users with fewer than five scored questions appear as
+“Not ranked yet”; balances and net gain are never exposed.
+
 Public question pages also support WebSocket price updates:
 
 ```text
