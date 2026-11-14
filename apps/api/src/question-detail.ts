@@ -3,6 +3,7 @@ import {
   calculatePrices,
   createMarket,
   myQuestionPredictionsResponseSchema,
+  predictionHistoryResponseSchema,
   questionDetailResponseSchema,
 } from "@forecasthub/shared";
 import type { Response } from "express";
@@ -220,4 +221,76 @@ export const getMyQuestionPredictions = async (
   });
 
   response.json(result);
+};
+
+export const getMyPredictionHistory = async (
+  request: AuthenticatedRequest,
+  response: Response,
+) => {
+  if (!request.auth) {
+    response.status(401).json({ error: { code: "UNAUTHENTICATED", message: "Authentication is required." } });
+    return;
+  }
+  const user = await prisma.user.findUnique({
+    where: { id: request.auth.userId },
+    select: { isActive: true },
+  });
+  if (!user?.isActive) {
+    response.status(401).json({ error: { code: "UNAUTHENTICATED", message: "Authentication is required." } });
+    return;
+  }
+  const predictions = await prisma.prediction.findMany({
+    where: { userId: request.auth.userId },
+    select: {
+      id: true,
+      questionId: true,
+      answerId: true,
+      question: {
+        select: {
+          title: true,
+          status: true,
+          deadline: true,
+          correctAnswerId: true,
+        },
+      },
+      answer: { select: { text: true } },
+      creditsCharged: true,
+      shares: true,
+      createdAt: true,
+    },
+    orderBy: { createdAt: "desc" },
+  });
+  const resolvedQuestionIds = [...new Set(predictions
+    .filter((prediction) => prediction.question.status === "RESOLVED")
+    .map((prediction) => prediction.questionId))];
+  const winningCounts = await prisma.prediction.groupBy({
+    by: ["questionId", "answerId"],
+    where: { questionId: { in: resolvedQuestionIds } },
+    _count: { _all: true },
+  });
+  const winningCountByAnswer = new Map(
+    winningCounts.map((entry) => [`${entry.questionId}:${entry.answerId}`, entry._count._all]),
+  );
+  response.json(predictionHistoryResponseSchema.parse({
+    predictions: predictions.map((prediction) => {
+      const shares = prediction.shares?.mul(100).toNumber() ?? 0;
+      const resolved = prediction.question.status === "RESOLVED";
+      const won = resolved && prediction.answerId === prediction.question.correctAnswerId;
+      const noWinner = resolved
+        && (winningCountByAnswer.get(`${prediction.questionId}:${prediction.question.correctAnswerId}`) ?? 0) === 0;
+      return {
+        id: prediction.id,
+        questionId: prediction.questionId,
+        questionTitle: prediction.question.title,
+        answerText: prediction.answer.text,
+        questionStatus: prediction.question.status,
+        deadline: prediction.question.deadline.toISOString(),
+        creditsCharged: prediction.creditsCharged,
+        shares,
+        outcome: !resolved ? "PENDING" : noWinner ? "REFUNDED" : won ? "WON" : "LOST",
+        settlementAmount: noWinner ? prediction.creditsCharged : won ? shares : 0,
+        createdAt: prediction.createdAt.toISOString(),
+      };
+    }),
+  }));
 };

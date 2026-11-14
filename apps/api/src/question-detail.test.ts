@@ -256,6 +256,58 @@ describe("question detail APIs", () => {
     expect(missing.status).toBe(404);
   });
 
+  it("returns only the authenticated user's prediction history with settlement outcomes", async () => {
+    const scenario = await createScenario();
+    const other = await registerOtherUser(scenario.app);
+    expect((await request(scenario.app).get("/api/v1/private/predictions")).status).toBe(401);
+    await prisma.prediction.createMany({
+      data: [
+        {
+          userId: scenario.user.id,
+          questionId: scenario.question.id,
+          answerId: scenario.answerA.id,
+          creditsCharged: 200,
+          shares: new Prisma.Decimal("2.50"),
+          createdAt: new Date("2029-01-02T03:04:05.000Z"),
+        },
+        {
+          userId: other.user.id,
+          questionId: scenario.question.id,
+          answerId: scenario.answerB.id,
+          creditsCharged: 100,
+          shares: new Prisma.Decimal("1.00"),
+        },
+      ],
+    });
+
+    const pending = await request(scenario.app)
+      .get("/api/v1/private/predictions")
+      .set("Cookie", scenario.cookie!);
+    expect(pending.status).toBe(200);
+    expect(pending.body.predictions).toHaveLength(1);
+    expect(pending.body.predictions[0]).toMatchObject({
+      questionId: scenario.question.id,
+      questionTitle: scenario.question.title,
+      answerText: "Yes",
+      questionStatus: "OPEN",
+      outcome: "PENDING",
+      settlementAmount: 0,
+    });
+    expect(JSON.stringify(pending.body)).not.toContain(other.user.username);
+
+    await prisma.question.update({
+      where: { id: scenario.question.id },
+      data: { status: QuestionStatus.RESOLVED, correctAnswerId: scenario.answerA.id },
+    });
+    const resolved = await request(scenario.app)
+      .get("/api/v1/private/predictions")
+      .set("Cookie", scenario.cookie!);
+    expect(resolved.body.predictions[0]).toMatchObject({
+      outcome: "WON",
+      settlementAmount: 250,
+    });
+  });
+
   it("rate limits unauthenticated private prediction-history requests by IP", async () => {
     const scenario = await createScenario();
     const path = `/api/v1/private/questions/${scenario.question.id}/predictions`;
