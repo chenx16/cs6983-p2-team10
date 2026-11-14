@@ -58,6 +58,15 @@ describe("A/B resolution", () => {
         shares: new Prisma.Decimal("2.50"),
       },
     });
+    await prisma.creditLedger.create({
+      data: {
+        userId: participant.id,
+        type: "PREDICTION",
+        amount: -200,
+        reason: "Prediction placed",
+        predictionId: prediction.id,
+      },
+    });
 
     const ready = await request(app)
       .get("/api/v1/private/organizer/questions/ready-to-resolve")
