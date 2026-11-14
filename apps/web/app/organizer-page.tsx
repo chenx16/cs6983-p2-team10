@@ -2,10 +2,11 @@
 
 import React, { useEffect, useState } from "react";
 import type { AuthUser } from "./auth-client";
-import { createQuestion, finalizeQuestion, getCategories, getOrganizerQuestions, publishQuestion, type OrganizerCategory, type OrganizerQuestion, updateQuestion } from "./organizer-client";
+import { createQuestion, finalizeQuestion, getCategories, getOrganizerQuestions, getReadyToResolve, publishQuestion, resolveQuestion, type OrganizerCategory, type OrganizerQuestion, type ReadyQuestion, updateQuestion } from "./organizer-client";
 
 const initialForm = { title: "", categoryId: "", answerA: "", answerB: "", startingPriceA: 50, deadline: "", eventTime: "", outcomeCriteria: "", source: "" };
 type FormState = typeof initialForm;
+type OrganizerTab = "questions" | "drafts" | "resolve";
 
 const localDateTimeValue = (date: Date) => {
   const offset = date.getTimezoneOffset() * 60000;
@@ -15,8 +16,13 @@ const localDateTimeValue = (date: Date) => {
 export function OrganizerPage({ user }: { user: AuthUser | null }) {
   const [categories, setCategories] = useState<OrganizerCategory[]>([]);
   const [questions, setQuestions] = useState<OrganizerQuestion[]>([]);
+  const [readyQuestions, setReadyQuestions] = useState<ReadyQuestion[]>([]);
   const [form, setForm] = useState<FormState>(initialForm);
   const [editing, setEditing] = useState<string | null>(null);
+  const [tab, setTab] = useState<OrganizerTab>("questions");
+  const [resolutionTarget, setResolutionTarget] = useState<ReadyQuestion | null>(null);
+  const [resolutionAnswerId, setResolutionAnswerId] = useState("");
+  const [evidenceNote, setEvidenceNote] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -24,9 +30,10 @@ export function OrganizerPage({ user }: { user: AuthUser | null }) {
 
   const load = async () => {
     try {
-      const [categoryResponse, questionResponse] = await Promise.all([getCategories(), getOrganizerQuestions()]);
+      const [categoryResponse, questionResponse, readyResponse] = await Promise.all([getCategories(), getOrganizerQuestions(), getReadyToResolve()]);
       setCategories(categoryResponse.categories);
       setQuestions(questionResponse.questions);
+      setReadyQuestions(readyResponse.questions);
       setForm((current) => ({ ...current, categoryId: current.categoryId || categoryResponse.categories[0]?.id || "" }));
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Unable to load organizer tools.");
@@ -61,6 +68,7 @@ export function OrganizerPage({ user }: { user: AuthUser | null }) {
   };
   const edit = (question: OrganizerQuestion) => {
     setEditing(question.id);
+    setTab("drafts");
     setForm({
       title: question.title,
       categoryId: categories.find((category) => category.name === question.category.name)?.id ?? "",
@@ -75,14 +83,31 @@ export function OrganizerPage({ user }: { user: AuthUser | null }) {
   };
   const action = async (operation: () => Promise<unknown>, success: string) => {
     setError(""); setMessage("");
-    try { await operation(); setMessage(success); await load(); } catch (requestError) { setError(requestError instanceof Error ? requestError.message : "Organizer action failed."); }
+    try { await operation(); setMessage(success); await load(); return true; } catch (requestError) { setError(requestError instanceof Error ? requestError.message : "Organizer action failed."); return false; }
+  };
+  const resolve = async (question: ReadyQuestion) => {
+    setResolutionTarget(question);
+    setResolutionAnswerId(question.answers[0]?.id ?? "");
+    setEvidenceNote("");
+  };
+  const submitResolution = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!resolutionTarget || !resolutionAnswerId || !evidenceNote.trim()) return;
+    const resolvedId = resolutionTarget.id;
+    const succeeded = await action(() => resolveQuestion(resolvedId, { answerId: resolutionAnswerId, evidenceNote: evidenceNote.trim() }), "Question resolved and payouts issued.");
+    if (!succeeded) return;
+    setReadyQuestions((current) => current.filter((question) => question.id !== resolvedId));
+    setResolutionTarget(null);
   };
 
   return <>
     <div className="breadcrumbs">ForecastHub <span>›</span> <b>Organizer</b></div>
     <div className="page-heading"><div><p className="eyebrow">Organizer workspace</p><h1>Create fair A/B questions.</h1><p className="muted">Save drafts, publish when ready, and finalize after the deadline.</p></div></div>
     {error && <p className="error-message" role="alert">{error}</p>}{message && <p className="success-message" role="status">{message}</p>}
-    <div className="organizer-grid">
+    <nav className="organizer-tabs" aria-label="Organizer workspace tabs">
+      {([["questions", "My Questions"], ["drafts", "Edit Drafts"], ["resolve", "Resolve"]] as const).map(([value, label]) => <button className={tab === value ? "active" : ""} aria-selected={tab === value} key={value} onClick={() => setTab(value)} role="tab" type="button">{label}{value === "resolve" && readyQuestions.length > 0 ? ` (${readyQuestions.length})` : ""}</button>)}
+    </nav>
+    {tab === "drafts" && <div className="organizer-grid">
       <form className="panel organizer-form" onSubmit={(event) => void submit(event)}><div className="panel-heading"><div><p className="eyebrow">Question setup</p><h2>{editing ? "Edit draft" : "New draft"}</h2></div></div>
         <label>Question title<input required maxLength={200} onChange={(event) => change("title", event.target.value)} value={form.title} /></label>
         <label>Category<select required onChange={(event) => change("categoryId", event.target.value)} value={form.categoryId}><option value="">Choose category</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>
@@ -92,8 +117,10 @@ export function OrganizerPage({ user }: { user: AuthUser | null }) {
         <label>Outcome criteria<textarea required maxLength={2000} onChange={(event) => change("outcomeCriteria", event.target.value)} value={form.outcomeCriteria} /></label><label>Trusted source<input required maxLength={500} onChange={(event) => change("source", event.target.value)} value={form.source} /></label>
         <div className="form-actions"><button className="button button-primary" type="submit">{editing ? "Save draft changes" : "Save draft"}</button>{editing && <button className="button" onClick={() => { setEditing(null); setForm({ ...initialForm, categoryId: form.categoryId }); }} type="button">Cancel edit</button>}</div>
       </form>
-      <section className="panel"><div className="panel-heading"><div><p className="eyebrow">Your questions</p><h2>Question workspace</h2></div><span className="tag">{questions.length}</span></div><div className="admin-list">{questions.map((question) => <article className="admin-row" key={question.id}><div><strong>{question.title}</strong><span className="muted">{question.category.name} · {question.status} · {question._count.predictions} predictions</span></div><div className="form-actions">{question.status === "DRAFT" && <><button className="button" onClick={() => edit(question)} type="button">Edit</button><button className="button button-primary" onClick={() => void action(() => publishQuestion(question.id), "Question published.")} type="button">Publish</button></>}{question.status === "OPEN" && <button className="button button-danger" onClick={() => void action(() => finalizeQuestion(question.id), "Question finalized.")} type="button">Finalize after deadline</button>}</div></article>)}</div></section>
-    </div>
+    </div>}
+    {tab === "questions" && <section className="panel"><div className="panel-heading"><div><p className="eyebrow">Created by you</p><h2>My Questions</h2></div><div className="form-actions"><span className="tag">{questions.length}</span><button className="button button-primary" onClick={() => { setEditing(null); setForm({ ...initialForm, categoryId: categories[0]?.id ?? "" }); setTab("drafts"); }} type="button">New draft</button></div></div><div className="admin-list">{questions.map((question) => <article className="admin-row" key={question.id}><div><strong>{question.title}</strong><span className="muted">{question.category.name} · {question.status} · deadline {new Date(question.deadline).toLocaleString()} · {question._count.predictions} predictions</span></div><div className="form-actions">{question.status === "DRAFT" && <button className="button" onClick={() => edit(question)} type="button">Edit draft</button>}{question.status === "OPEN" && <button className="button button-danger" onClick={() => void action(() => finalizeQuestion(question.id), "Question finalized.")} type="button">Finalize after deadline</button>}</div></article>)}{questions.length === 0 && <p className="muted">You have not created any questions yet.</p>}</div></section>}
+    {tab === "resolve" && <section className="panel"><div className="panel-heading"><div><p className="eyebrow">After the deadline</p><h2>Resolve Questions</h2></div><span className="tag">{readyQuestions.length}</span></div><div className="admin-list">{readyQuestions.map((question) => <article className="admin-row" key={question.id}><div><strong>{question.title}</strong><span className="muted">{question.category.name} · deadline {new Date(question.deadline).toLocaleString()} · {question.answers.map((answer) => answer.text).join(" / ")}</span></div><button className="button button-primary" onClick={() => resolve(question)} type="button">Choose result</button></article>)}{readyQuestions.length === 0 && <p className="muted">No questions are ready to resolve.</p>}</div></section>}
+    {resolutionTarget && <form className="panel resolution-form" onSubmit={(event) => void submitResolution(event)}><div className="panel-heading"><div><p className="eyebrow">Resolution</p><h2>{resolutionTarget.title}</h2></div></div><label>Correct answer<select required onChange={(event) => setResolutionAnswerId(event.target.value)} value={resolutionAnswerId}>{resolutionTarget.answers.map((answer) => <option key={answer.id} value={answer.id}>{answer.text}</option>)}</select></label><label>Evidence note<textarea required maxLength={2000} onChange={(event) => setEvidenceNote(event.target.value)} placeholder="Describe the trusted source result." value={evidenceNote} /></label><div className="form-actions"><button className="button button-primary" type="submit">Resolve and pay out</button><button className="button" onClick={() => setResolutionTarget(null)} type="button">Cancel</button></div></form>}
   </>;
 }
 

@@ -119,6 +119,8 @@ export const questionDetailResponseSchema = z.object({
   eventTime: z.string().datetime(),
   outcomeCriteria: z.string(),
   source: z.string(),
+  resolutionNote: z.string().nullable().optional(),
+  correctAnswerId: z.string().nullable().optional(),
   totalCreditsSpent: z.number().int().nonnegative(),
   answers: z.array(z.object({
     id: z.string().min(1),
@@ -145,10 +147,17 @@ export const myQuestionPredictionsResponseSchema = z.object({
     creditsCharged: z.number().int().nonnegative(),
     shares: z.number().int().nonnegative(),
     payoutIfCorrect: z.number().int().nonnegative(),
+    won: z.boolean().optional(),
     createdAt: z.string().datetime(),
   })),
 });
 export type MyQuestionPredictionsResponse = z.infer<typeof myQuestionPredictionsResponseSchema>;
+
+export const resolveAbQuestionRequestSchema = z.object({
+  answerId: z.string().trim().min(1),
+  evidenceNote: z.string().trim().min(1).max(2000),
+});
+export type ResolveAbQuestionRequest = z.infer<typeof resolveAbQuestionRequestSchema>;
 
 export {
   calculateCost,

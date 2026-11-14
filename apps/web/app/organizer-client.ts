@@ -9,9 +9,10 @@ export type OrganizerQuestion = {
   outcomeCriteria: string;
   source: string;
   category: { name: string };
-  answers: { text: string }[];
+  answers: { id?: string; text: string }[];
   _count: { predictions: number };
 };
+export type ReadyQuestion = Omit<OrganizerQuestion, "answers"> & { answers: { id: string; text: string }[] };
 
 type ErrorPayload = { error?: { message?: string } };
 const request = async <T extends object>(path: string, init?: RequestInit): Promise<T> => {
@@ -27,3 +28,5 @@ export const createQuestion = (input: object) => request<{ question: OrganizerQu
 export const updateQuestion = (id: string, input: object) => request<{ question: OrganizerQuestion }>(`/api/v1/private/organizer/questions/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) });
 export const publishQuestion = (id: string) => request<{ question: OrganizerQuestion }>(`/api/v1/private/organizer/questions/${id}/publish`, { method: "POST" });
 export const finalizeQuestion = (id: string) => request<{ question: OrganizerQuestion }>(`/api/v1/private/organizer/questions/${id}/finalize`, { method: "POST" });
+export const getReadyToResolve = () => request<{ questions: ReadyQuestion[] }>("/api/v1/private/organizer/questions/ready-to-resolve");
+export const resolveQuestion = (id: string, input: { answerId: string; evidenceNote: string }) => request<{ question: OrganizerQuestion }>(`/api/v1/private/organizer/questions/${id}/resolve`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) });

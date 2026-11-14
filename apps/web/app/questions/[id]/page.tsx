@@ -319,6 +319,13 @@ export default function QuestionDetailPage() {
               <h1>{question.title}</h1>
               <p className="muted">{creditsText(question.totalCreditsSpent)} credits spent</p>
             </header>
+            {question.status === "RESOLVED" && question.correctAnswerId && (
+              <section className="panel resolution-result" aria-label="Question result">
+                <p className="eyebrow">Final result</p>
+                <h2>{question.answers.find((answer) => answer.id === question.correctAnswerId)?.text}</h2>
+                {question.resolutionNote && <p className="muted">{question.resolutionNote}</p>}
+              </section>
+            )}
             <div className="detail-grid">
               <div className="detail-main">
                 <section className="panel" aria-labelledby="crowd-heading">
@@ -352,7 +359,7 @@ export default function QuestionDetailPage() {
                             <strong>{item.answerText}</strong>
                             <span>{creditsText(item.creditsCharged)} credits spent</span>
                             <span>{sharesText(item.shares)} shares</span>
-                            <span>{creditsText(item.payoutIfCorrect)} credits if correct</span>
+                            {item.won === undefined ? <span>{creditsText(item.payoutIfCorrect)} credits if correct</span> : <strong className={item.won ? "prediction-won" : "prediction-lost"}>{item.won ? `Won · ${creditsText(item.payoutIfCorrect)} credits paid` : "Lost"}</strong>}
                             <time dateTime={item.createdAt}>{pacificTime(item.createdAt)}</time>
                           </li>
                         ))}

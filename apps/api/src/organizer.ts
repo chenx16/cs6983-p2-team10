@@ -27,7 +27,7 @@ const answerData = (input: AbQuestionRequest) => [
 
 const organizerQuestionInclude = {
   category: { select: { name: true } },
-  answers: { orderBy: { sortOrder: "asc" as const }, select: { text: true } },
+  answers: { orderBy: { sortOrder: "asc" as const }, select: { id: true, text: true } },
   _count: { select: { predictions: true } },
 };
 
