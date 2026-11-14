@@ -69,6 +69,40 @@ describe("authentication rate limiting", () => {
     expect(response.status).toBe(429);
   });
 
+  it("counts whitespace variants of an identifier together", async () => {
+    const app = createApp();
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const response = await request(app).post("/api/v1/auth/login").send({
+        identifier: "first@example.com",
+        password: "wrong-password",
+      });
+      expect(response.status).toBe(401);
+    }
+
+    const response = await request(app).post("/api/v1/auth/login").send({
+      identifier: " first@example.com ",
+      password: "wrong-password",
+    });
+    expect(response.status).toBe(429);
+  });
+
+  it("limits failed logins across many identifiers from the same IP", async () => {
+    const app = createApp();
+    for (let attempt = 0; attempt < 300; attempt++) {
+      const response = await request(app).post("/api/v1/auth/login").send({
+        identifier: `missing${attempt}@example.com`,
+        password: "wrong-password",
+      });
+      expect(response.status).toBe(401);
+    }
+
+    const response = await request(app).post("/api/v1/auth/login").send({
+      identifier: "another@example.com",
+      password: "wrong-password",
+    });
+    expect(response.status).toBe(429);
+  });
+
   it("does not consume the login allowance on invalid registrations", async () => {
     const app = createApp();
     for (let attempt = 0; attempt < 10; attempt++) {
@@ -81,5 +115,16 @@ describe("authentication rate limiting", () => {
       password: "CorrectHorse1",
     });
     expect(response.status).toBe(200);
+  });
+
+  it("continues to limit repeated registration requests", async () => {
+    const app = createApp();
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const response = await request(app).post("/api/v1/auth/register").send({});
+      expect(response.status).toBe(400);
+    }
+
+    const response = await request(app).post("/api/v1/auth/register").send({});
+    expect(response.status).toBe(429);
   });
 });

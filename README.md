@@ -259,6 +259,12 @@ users may share the same apparent IP address, so these limits are deliberately
 generous. Accurate IP-based rate limiting depends on a safe `trust proxy`
 configuration tracked in [issue #16](https://github.com/chenx16/cs6983-p2-team10/issues/16).
 
+Login limits failed attempts to 10 per submitted identifier and 300 per apparent
+IP address in 15 minutes; successful logins do not consume those limits.
+Registration has a separate limit of 10 requests per apparent IP address in
+15 minutes. Username and email are separate login identifiers, and proxy
+sharing can still cause the IP limits to affect multiple users.
+
 ## Known security issues
 
 The high-severity audit findings currently come from Prisma's
