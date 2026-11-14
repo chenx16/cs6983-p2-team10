@@ -83,7 +83,6 @@ export const resolveAbQuestion = (
           type: "PAYOUT",
           amount: payout,
           reason: `Correct answer payout: ${input.evidenceNote}`,
-          predictionId: prediction.id,
         },
       });
     }
