@@ -79,7 +79,8 @@ describe("A/B resolution", () => {
     expect(readyAfterResolution.body.questions).toHaveLength(0);
 
     await expect(prisma.user.findUniqueOrThrow({ where: { id: participant.id } })).resolves.toMatchObject({ balance: 1050 });
-    await expect(prisma.creditLedger.findUnique({ where: { predictionId: prediction.id } })).resolves.toMatchObject({ type: "PAYOUT", amount: 250 });
+    await expect(prisma.creditLedger.findUnique({ where: { predictionId: prediction.id } })).resolves.toMatchObject({ type: "PREDICTION", amount: -200 });
+    await expect(prisma.creditLedger.findFirst({ where: { userId: participant.id, type: "PAYOUT" } })).resolves.toMatchObject({ amount: 250 });
     const duplicate = await request(app)
       .post(`/api/v1/private/organizer/questions/${question.id}/resolve`)
       .set("Cookie", cookie)
