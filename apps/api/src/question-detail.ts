@@ -1,10 +1,11 @@
-import { QuestionType } from "@prisma/client";
+import { QuestionStatus, QuestionType, type Prisma } from "@prisma/client";
 import {
   calculatePrices,
   createMarket,
   myQuestionPredictionsResponseSchema,
   predictionHistoryResponseSchema,
   questionDetailResponseSchema,
+  type ArenaFilters,
 } from "@forecasthub/shared";
 import type { Response } from "express";
 import { prisma } from "./prisma.js";
@@ -97,15 +98,37 @@ export const getPublicQuestionDetail = async (
   response.json(result);
 };
 
-export const listPublicArenaQuestions = async () => {
+export const listPublicArenaQuestions = async (filters: ArenaFilters) => {
+  if (filters.type === "MULTI_ANSWER") return [];
+  const now = new Date();
+  const where: Prisma.QuestionWhereInput = {
+    type: QuestionType.AB,
+    isHidden: false,
+    publishedAt: { not: null },
+    ...(filters.category.length ? { categoryId: { in: filters.category } } : {}),
+  };
+  switch (filters.status) {
+    case "OPEN":
+      where.status = QuestionStatus.OPEN;
+      where.deadline = { gt: now };
+      break;
+    case "CLOSING_SOON":
+      where.status = QuestionStatus.OPEN;
+      where.deadline = { gt: now, lte: new Date(now.getTime() + 24 * 60 * 60 * 1000) };
+      break;
+    case "CLOSED":
+      where.OR = [
+        { status: QuestionStatus.CLOSED },
+        { status: QuestionStatus.OPEN, deadline: { lte: now } },
+      ];
+      break;
+    case "RESOLVED":
+    case "CANCELLED":
+      where.status = filters.status;
+      break;
+  }
   const questions = await prisma.question.findMany({
-    where: {
-      type: QuestionType.AB,
-      status: "OPEN",
-      isHidden: false,
-      publishedAt: { not: null },
-      deadline: { gt: new Date() },
-    },
+    where,
     orderBy: { deadline: "asc" },
     include: {
       category: { select: { name: true } },
@@ -138,7 +161,9 @@ export const listPublicArenaQuestions = async () => {
       id: question.id,
       title: question.title,
       category: question.category.name,
-      status: question.status,
+      status: question.status === QuestionStatus.OPEN && question.deadline <= now
+        ? QuestionStatus.CLOSED
+        : question.status,
       deadline: question.deadline.toISOString(),
       eventTime: question.eventTime.toISOString(),
       outcomeCriteria: question.outcomeCriteria,
