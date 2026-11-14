@@ -1,5 +1,6 @@
+import { createHash } from "node:crypto";
 import cors from "cors";
-import express, { type ErrorRequestHandler } from "express";
+import express, { type ErrorRequestHandler, type RequestHandler } from "express";
 import rateLimit from "express-rate-limit";
 import swaggerUi from "swagger-ui-express";
 import { abQuestionRequestSchema, arenaFiltersSchema, healthResponseSchema, loginRequestSchema, questionCancellationRequestSchema, registerRequestSchema, roleChangeRequestSchema } from "@forecasthub/shared";
@@ -192,12 +193,31 @@ export const createApp = () => {
     }
     return request.auth.userId;
   };
-  const authMutationRateLimit = rateLimit({
-    handler: (_request, response) => {
-      response.status(429).json({ error: { code: "RATE_LIMITED", message: "Too many authentication attempts. Try again later." } });
-    },
+  const authRateLimitHandler: RequestHandler = (_request, response) => {
+    response.status(429).json({ error: { code: "RATE_LIMITED", message: "Too many authentication attempts. Try again later." } });
+  };
+  const registrationRateLimit = rateLimit({
+    handler: authRateLimitHandler,
     legacyHeaders: false,
     max: 10,
+    standardHeaders: true,
+    windowMs: 15 * 60 * 1000,
+  });
+  const loginIpRateLimit = rateLimit({
+    handler: authRateLimitHandler,
+    legacyHeaders: false,
+    max: 300,
+    skipSuccessfulRequests: true,
+    standardHeaders: true,
+    windowMs: 15 * 60 * 1000,
+  });
+  const loginIdentifierRateLimit = rateLimit({
+    handler: authRateLimitHandler,
+    keyGenerator: (request) => createHash("sha256").update(loginRequestSchema.parse(request.body).identifier).digest("hex"),
+    legacyHeaders: false,
+    max: 10,
+    skip: (request) => !loginRequestSchema.safeParse(request.body).success,
+    skipSuccessfulRequests: true,
     standardHeaders: true,
     windowMs: 15 * 60 * 1000,
   });
@@ -324,7 +344,7 @@ export const createApp = () => {
     }
   });
 
-  app.post("/api/v1/auth/register", authMutationRateLimit, async (request, response, next) => {
+  app.post("/api/v1/auth/register", registrationRateLimit, async (request, response, next) => {
     const parsed = registerRequestSchema.safeParse(request.body);
     if (!parsed.success) {
       response.status(400).json({ error: { code: "INVALID_INPUT", message: "Username, email, and password are invalid." } });
@@ -343,7 +363,7 @@ export const createApp = () => {
     }
   });
 
-  app.post("/api/v1/auth/login", authMutationRateLimit, async (request, response, next) => {
+  app.post("/api/v1/auth/login", loginIpRateLimit, loginIdentifierRateLimit, async (request, response, next) => {
     const parsed = loginRequestSchema.safeParse(request.body);
     if (!parsed.success) {
       response.status(400).json({ error: { code: "INVALID_INPUT", message: "Username or email and password are invalid." } });
