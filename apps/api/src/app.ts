@@ -216,6 +216,16 @@ export const createApp = () => {
     standardHeaders: true,
     windowMs: 60 * 1000,
   });
+  const organizerReadyQuestionsRateLimit = rateLimit({
+    handler: (_request, response) => {
+      response.status(429).json({ error: { code: "RATE_LIMITED", message: "Too many organizer question requests. Try again later." } });
+    },
+    keyGenerator: predictionRateLimitKey,
+    legacyHeaders: false,
+    max: 60,
+    standardHeaders: true,
+    windowMs: 60 * 1000,
+  });
   app.use(cors({ origin: env.WEB_ORIGIN, credentials: true }));
   app.use(express.json());
 
@@ -335,7 +345,7 @@ export const createApp = () => {
     }
   });
 
-  app.get("/api/v1/private/organizer/questions/ready-to-resolve", requireAuth, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
+  app.get("/api/v1/private/organizer/questions/ready-to-resolve", requireAuth, organizerReadyQuestionsRateLimit, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
     try {
       response.json({ questions: await listReadyToResolve(request.auth!.userId) });
     } catch (error) {
