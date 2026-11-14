@@ -156,10 +156,15 @@ The Organizer workspace is divided into three tabs:
 - **Resolve** lists eligible questions after their deadlines and provides the
   answer selector and evidence-note form for resolution.
 
-The public Arena loads `GET /api/v1/public/questions`. This endpoint returns
-only visible, published A/B questions with `OPEN` status and deadlines still
-in the future, ordered by the soonest deadline. Expired or unpublished
-questions are not shown.
+The public Arena loads `GET /api/v1/public/questions`. By default it returns
+visible, published A/B questions that are open and not past their deadline,
+ordered by the soonest deadline. Repeat the `category` query parameter to
+filter by category IDs, and use `status=OPEN`, `CLOSING_SOON`, `CLOSED`,
+`RESOLVED`, or `CANCELLED`. Closing soon means a future deadline within 24
+hours; closed includes open questions whose deadline has passed. The optional
+`type` filter accepts `AB` or `MULTI_ANSWER`, but multi-answer questions are
+outside the current release and return an empty list. Hidden and draft
+questions are never included.
 
 Organizers and Administrators can resolve eligible A/B questions:
 

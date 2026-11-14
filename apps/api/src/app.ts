@@ -2,7 +2,7 @@ import cors from "cors";
 import express, { type ErrorRequestHandler } from "express";
 import rateLimit from "express-rate-limit";
 import swaggerUi from "swagger-ui-express";
-import { abQuestionRequestSchema, healthResponseSchema, loginRequestSchema, questionCancellationRequestSchema, registerRequestSchema, roleChangeRequestSchema } from "@forecasthub/shared";
+import { abQuestionRequestSchema, arenaFiltersSchema, healthResponseSchema, loginRequestSchema, questionCancellationRequestSchema, registerRequestSchema, roleChangeRequestSchema } from "@forecasthub/shared";
 import { authenticateUser, clearAuthCookie, createAccessToken, publicUser, registerUser, requireAdministrator, requireAuth, requireOrganizer, setAuthCookie, type AuthenticatedRequest } from "./auth.js";
 import { AdministratorActionError, cancelQuestion, changeUserRole, listAdministratorHistory, listAdministratorQuestions, listAdministratorUsers } from "./administrator.js";
 import { OrganizerActionError, createOrganizerQuestion, finalizeOrganizerQuestion, listCategories, listOrganizerQuestions, publishOrganizerQuestion, updateOrganizerQuestion } from "./organizer.js";
@@ -22,6 +22,21 @@ const openApiDocument = {
   },
   servers: [{ url: "/" }],
   paths: {
+    "/api/v1/public/questions": {
+      get: {
+        summary: "List visible, published questions",
+        parameters: [
+          { name: "category", in: "query", description: "Category IDs; repeat the parameter to select multiple categories.", schema: { type: "array", items: { type: "string" } }, style: "form", explode: true },
+          { name: "status", in: "query", schema: { type: "string", enum: ["OPEN", "CLOSING_SOON", "CLOSED", "RESOLVED", "CANCELLED"], default: "OPEN" } },
+          { name: "type", in: "query", description: "Multi-answer questions are not supported in this release.", schema: { type: "string", enum: ["AB", "MULTI_ANSWER"], default: "AB" } },
+        ],
+        responses: {
+          "200": { description: "Questions with public aggregate prices and credit totals." },
+          "400": { description: "Invalid filters." },
+          "429": { description: "Rate limit exceeded." },
+        },
+      },
+    },
     "/api/v1/public/health": {
       get: {
         summary: "Check API health",
@@ -253,9 +268,14 @@ export const createApp = () => {
     }
   });
 
-  app.get("/api/v1/public/questions", publicQuestionDetailRateLimit, async (_request, response, next) => {
+  app.get("/api/v1/public/questions", publicQuestionDetailRateLimit, async (request, response, next) => {
+    const filters = arenaFiltersSchema.safeParse(request.query);
+    if (!filters.success) {
+      response.status(400).json({ error: { code: "INVALID_INPUT", message: "Invalid question filters." } });
+      return;
+    }
     try {
-      response.json({ questions: await listPublicArenaQuestions() });
+      response.json({ questions: await listPublicArenaQuestions(filters.data) });
     } catch (error) {
       next(error);
     }

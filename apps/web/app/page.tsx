@@ -1,29 +1,23 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { AuthPage } from "./auth-page";
 import { getCurrentUser, logout } from "./auth-client";
 import type { AuthUser } from "./auth-client";
 import { AppShell, type AuthMode, type View } from "./app-shell";
 import { AdminPage } from "./admin-page";
 import { OrganizerPage } from "./organizer-page";
-import { arenaQuestionsResponseSchema } from "@forecasthub/shared";
+import { getCategories, type OrganizerCategory } from "./organizer-client";
+import { arenaQuestionsResponseSchema, type ArenaFilters, type ArenaQuestionResponse } from "@forecasthub/shared";
 
-type QuestionType = "A/B" | "Multi";
-type Status = "Open";
-
-type Question = {
-  id: string;
-  title: string;
-  category: string;
-  deadline: string;
-  status: Status;
-  type: QuestionType;
-  total: number;
-  answers: { label: string; value: number; color?: "yes" | "no" }[];
-  source: string;
-  criteria: string;
-};
+const statusFilters: { value: ArenaFilters["status"]; label: string }[] = [
+  { value: "OPEN", label: "Open" },
+  { value: "CLOSING_SOON", label: "Closing soon" },
+  { value: "CLOSED", label: "Closed" },
+  { value: "RESOLVED", label: "Resolved" },
+  { value: "CANCELLED", label: "Cancelled" },
+];
 
 const leaderboard = [
   { rank: 1, username: "forecastfox", scored: 42, success: "78%" },
@@ -36,71 +30,63 @@ function Icon({ children }: { children: React.ReactNode }) {
   return <span aria-hidden="true" className="icon">{children}</span>;
 }
 
-function Button({
-  children,
-  primary = false,
-  onClick,
-  disabled = false,
-  type = "button",
-}: {
-  children: React.ReactNode;
-  primary?: boolean;
-  onClick?: () => void;
-  disabled?: boolean;
-  type?: "button" | "submit";
-}) {
-  return (
-    <button className={`button ${primary ? "button-primary" : ""}`} disabled={disabled} onClick={onClick} type={type}>
-      {children}
-    </button>
-  );
-}
-
-function QuestionCard({ question, onOpen }: { question: Question; onOpen: () => void }) {
+function QuestionCard({ question }: { question: ArenaQuestionResponse }) {
   const firstAnswer = question.answers[0];
+  const detailPath = `/questions/${encodeURIComponent(question.id)}`;
+  const status = statusFilters.find((filter) => filter.value === question.status)?.label ?? question.status;
+  const deadline = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Los_Angeles", dateStyle: "medium", timeStyle: "short",
+  }).format(new Date(question.deadline));
   return (
     <article className="question-card">
       <div className="card-meta">
         <span><Icon>◈</Icon> {question.category}</span>
-        <span className="tag">{question.status}</span>
+        <span className="tag">{status}</span>
       </div>
-      <button className="question-title" onClick={onOpen}>{question.title}</button>
-      {question.type === "A/B" ? (
-        <>
-          <div className="answer-grid">
-            {question.answers.map((answer) => (
-              <button className={`answer ${answer.color}`} key={answer.label} onClick={onOpen}>
-                <span>{answer.label}</span><strong>{answer.value}</strong>
-              </button>
-            ))}
-          </div>
-          <div className="split-bar"><span style={{ width: `${firstAnswer?.value ?? 0}%` }} /></div>
-        </>
-      ) : (
-        <div className="pool-list">
-          {question.answers.map((answer) => (
-            <button className="pool-option" key={answer.label} onClick={onOpen}>
-              <span className="pool-fill" style={{ width: `${answer.value}%` }} />
-              <span>{answer.label}</span><strong>{answer.value}%</strong>
-            </button>
-          ))}
-        </div>
-      )}
+      <Link className="question-title" href={detailPath}>{question.title}</Link>
+      <div className="answer-grid">
+        {question.answers.map((answer, index) => (
+          <Link className={`answer ${index === 0 ? "yes" : "no"}`} href={`${detailPath}?answer=${encodeURIComponent(answer.id)}`} key={answer.id}>
+            <span>{answer.text}</span><strong>{answer.price}</strong>
+          </Link>
+        ))}
+      </div>
+      <div className="split-bar"><span style={{ width: `${firstAnswer?.price ?? 0}%` }} /></div>
       <div className="card-footer">
-        <span>{question.deadline}</span><strong>{question.total.toLocaleString()} credits</strong>
+        <span>{deadline} PT</span><strong>{question.totalCreditsSpent.toLocaleString()} credits</strong>
       </div>
     </article>
   );
 }
 
-function Arena({ onOpen }: { onOpen: (question: Question) => void }) {
-  const [questions, setQuestions] = useState<Question[]>([]);
+function Arena() {
+  const [questions, setQuestions] = useState<ArenaQuestionResponse[]>([]);
+  const [categories, setCategories] = useState<OrganizerCategory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loaded, setLoaded] = useState(false);
+  const [loadedStatus, setLoadedStatus] = useState<ArenaFilters["status"]>("OPEN");
   const [error, setError] = useState("");
-  const [category, setCategory] = useState("All topics");
+  const [categoryError, setCategoryError] = useState("");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [status, setStatus] = useState<ArenaFilters["status"]>("OPEN");
+
   useEffect(() => {
     let active = true;
-    void fetch("/api/v1/public/questions", { credentials: "include" })
+    void getCategories()
+      .then((result) => { if (active) setCategories(result.categories); })
+      .catch((requestError: unknown) => {
+        if (active) setCategoryError(requestError instanceof Error ? requestError.message : "Unable to load categories.");
+      });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    const query = new URLSearchParams({ status });
+    selectedCategories.forEach((category) => query.append("category", category));
+    setLoading(true);
+    setError("");
+    void fetch(`/api/v1/public/questions?${query}`, { credentials: "include" })
       .then(async (response) => {
         const payload: unknown = await response.json();
         if (!response.ok) throw new Error("Unable to load Arena questions.");
@@ -108,76 +94,43 @@ function Arena({ onOpen }: { onOpen: (question: Question) => void }) {
       })
       .then((payload) => {
         if (!active) return;
-        setQuestions(payload.questions.map((question) => ({
-          id: question.id,
-          title: question.title,
-          category: question.category,
-          deadline: new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", dateStyle: "medium", timeStyle: "short" }).format(new Date(question.deadline)) + " PT",
-          status: "Open",
-          type: "A/B",
-          total: question.totalCreditsSpent,
-          answers: question.answers.map((answer, index) => ({ label: answer.text, value: answer.price, color: index === 0 ? "yes" : "no" })),
-          source: question.source,
-          criteria: question.outcomeCriteria,
-        })));
+        setQuestions(payload.questions);
+        setLoadedStatus(status);
+        setLoaded(true);
       })
       .catch((requestError: unknown) => {
         if (active) setError(requestError instanceof Error ? requestError.message : "Unable to load Arena questions.");
       })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, []);
-  const categories = ["All topics", ...new Set(questions.map((question) => question.category))];
-  const filtered = questions.filter((question) => category === "All topics" || question.category === category);
+  }, [selectedCategories, status]);
+  const visibleQuestions = questions.filter((question) =>
+    selectedCategories.length === 0 || categories.some((category) =>
+      selectedCategories.includes(category.id) && category.name === question.category,
+    ),
+  );
 
   return (
     <>
-      <div className="breadcrumbs">ForecastHub <span>›</span> <b>Open</b></div>
+      <div className="breadcrumbs">ForecastHub <span>›</span> <b>{statusFilters.find((filter) => filter.value === status)?.label}</b></div>
       <div className="page-heading">
-        <div><p className="eyebrow">The Arena</p><h1>Questions worth thinking about.</h1><p className="muted">Published questions still open for predictions.</p></div>
+        <div><p className="eyebrow">The Arena</p><h1>Questions worth thinking about.</h1><p className="muted">Browse published questions by topic and status.</p></div>
+      </div>
+      <div className="status-filters" role="group" aria-label="Question status">
+        {statusFilters.map((filter) => <button aria-pressed={status === filter.value} key={filter.value} onClick={() => setStatus(filter.value)} type="button">{filter.label}</button>)}
       </div>
       <div className="topic-tabs" aria-label="Question topics">
-        {categories.map((value) => <button aria-pressed={category === value} key={value} onClick={() => setCategory(value)}>{value}</button>)}
+        <button aria-pressed={selectedCategories.length === 0} onClick={() => setSelectedCategories([])} type="button">All topics</button>
+        {categories.map((category) => <button aria-pressed={selectedCategories.includes(category.id)} key={category.id} onClick={() => setSelectedCategories((current) => current.includes(category.id) ? current.filter((id) => id !== category.id) : [...current, category.id])} type="button">{category.name}</button>)}
       </div>
+      {categoryError && <p className="error-message" role="alert">{categoryError}</p>}
       {loading && <p role="status">Loading published questions…</p>}
       {error && <p className="error-message" role="alert">{error}</p>}
-      {!loading && !error && <div className="question-grid">
-        {filtered.map((question) => <QuestionCard key={question.id} onOpen={() => onOpen(question)} question={question} />)}
+      {loaded && loadedStatus === status && !error && <div aria-busy={loading} className="question-grid">
+        {visibleQuestions.map((question) => <QuestionCard key={question.id} question={question} />)}
       </div>}
-      {!loading && !error && filtered.length === 0 && <div className="empty-state"><strong>No open questions here yet.</strong><span>Published questions appear after their deadline is set in the future.</span></div>}
+      {!loading && !error && visibleQuestions.length === 0 && <div className="empty-state"><strong>No questions match these filters.</strong><span>Try a different topic or status.</span></div>}
       <p className="privacy-note">All times are Pacific Time. Credits are virtual only and cannot be bought, sold, or exchanged for money.</p>
-    </>
-  );
-}
-
-function Detail({ question, onBack, onSignIn }: { question: Question; onBack: () => void; onSignIn: () => void }) {
-  const [amount, setAmount] = useState("100");
-  const [selected, setSelected] = useState(question.answers[0]?.label ?? "");
-  const [preview, setPreview] = useState(false);
-  return (
-    <>
-      <button className="back-link" onClick={onBack}>← Back to Arena</button>
-      <div className="detail-heading"><p className="eyebrow">{question.category} · {question.status}</p><h1>{question.title}</h1><p className="muted">{question.deadline} · {question.total.toLocaleString()} credits in this question</p></div>
-      <div className="detail-grid">
-        <section className="detail-main">
-          <div className="panel crowd-panel"><div className="panel-heading"><h2>What the crowd thinks</h2><span className="live"><i /> Live</span></div>
-            {question.type === "A/B" ? <div className="big-answers">{question.answers.map((answer) => <div className={`big-answer ${answer.color}`} key={answer.label}><span>{answer.label}</span><strong>{answer.value}%</strong></div>)}</div> : <div className="pool-list large">{question.answers.map((answer) => <div className="pool-option" key={answer.label}><span className="pool-fill" style={{ width: `${answer.value}%` }} /><span>{answer.label}</span><strong>{answer.value}%</strong></div>)}</div>}
-            <div className="chart-placeholder" role="img" aria-label="Forecast history chart"><span className="chart-line" /><span className="chart-axis">7 days ago <b>Today</b></span></div>
-          </div>
-          <div className="panel"><h2>About this question</h2><dl className="facts"><div><dt>How it resolves</dt><dd>{question.criteria}</dd></div><div><dt>Trusted source</dt><dd>{question.source}</dd></div><div><dt>Deadline</dt><dd>{question.deadline} (Pacific Time)</dd></div></dl></div>
-        </section>
-        <aside className="panel prediction-panel">
-          <h2>Make a prediction</h2>
-          <p className="balance">Sign in to see your balance. New accounts start with 1,000 free credits.</p>
-          <fieldset><legend>Choose an answer</legend>{question.answers.map((answer) => <label className={`choice ${selected === answer.label ? "selected" : ""}`} key={answer.label}><input checked={selected === answer.label} name="answer" onChange={() => setSelected(answer.label)} type="radio" /> <span>{answer.label}</span><b>{answer.value}%</b></label>)}</fieldset>
-          <label className="field-label" htmlFor="amount">Credits to put on this answer</label>
-          <div className="amount-input"><input id="amount" min="1" onChange={(event) => setAmount(event.target.value)} type="number" value={amount} /><span>credits</span></div>
-          <div className="quick-amounts">{["25", "100", "250"].map((value) => <button key={value} onClick={() => setAmount(value)}>{value}</button>)}</div>
-          {preview && <div className="preview-box" role="status"><strong>Preview prepared</strong><span>{amount} credits on {selected}. The server will confirm the final charge and outcome.</span></div>}
-          <Button primary onClick={() => { setPreview(true); onSignIn(); }}>Sign in to predict</Button>
-          <p className="fine-print">Predictions are timestamped and cannot be changed or withdrawn.</p>
-        </aside>
-      </div>
     </>
   );
 }
@@ -194,7 +147,6 @@ export default function HomePage() {
   const [view, setView] = useState<View>("arena");
   const [authMode, setAuthMode] = useState<AuthMode>("login");
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
   useEffect(() => {
     const requestedView = new URLSearchParams(window.location.search).get("view");
     if (requestedView === "leaderboard" || requestedView === "admin" || requestedView === "organizer" || requestedView === "sign-in") setView(requestedView);
@@ -208,19 +160,17 @@ export default function HomePage() {
     await logout();
     setUser(null);
   };
-  const openQuestion = (question: Question) => { setSelectedQuestion(question); setView("arena"); };
   const content = useMemo(() => {
     if (view === "sign-in") return <SignIn mode={authMode} onBack={handleAuthenticated} />;
     if (view === "leaderboard") return <Leaderboard />;
     if (view === "admin") return <AdminPage user={user} />;
     if (view === "organizer") return <OrganizerPage user={user} />;
-    if (selectedQuestion) return <Detail onBack={() => setSelectedQuestion(null)} onSignIn={() => setView("sign-in")} question={selectedQuestion} />;
-    return <Arena onOpen={openQuestion} />;
-  }, [authMode, selectedQuestion, view]);
+    return <Arena />;
+  }, [authMode, user, view]);
   if (view === "sign-in") return content;
   return <AppShell
-    onAuthNavigate={(mode) => { setAuthMode(mode); setSelectedQuestion(null); setView("sign-in"); }}
-    onNavigate={(next) => { setSelectedQuestion(null); setView(next); }}
+    onAuthNavigate={(mode) => { setAuthMode(mode); setView("sign-in"); }}
+    onNavigate={setView}
     onSignOut={() => { void handleSignOut(); }}
     user={user}
     view={view}

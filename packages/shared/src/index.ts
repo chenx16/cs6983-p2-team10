@@ -131,8 +131,18 @@ export const questionDetailResponseSchema = z.object({
 });
 export type QuestionDetailResponse = z.infer<typeof questionDetailResponseSchema>;
 
+export const arenaStatusFilterSchema = z.enum(["OPEN", "CLOSING_SOON", "CLOSED", "RESOLVED", "CANCELLED"]);
+export const arenaFiltersSchema = z.object({
+  category: z.union([z.string().trim().min(1), z.array(z.string().trim().min(1)).min(1)])
+    .optional()
+    .transform((value) => value === undefined ? [] : Array.isArray(value) ? value : [value]),
+  status: arenaStatusFilterSchema.default("OPEN"),
+  type: z.enum(["AB", "MULTI_ANSWER"]).default("AB"),
+});
+export type ArenaFilters = z.infer<typeof arenaFiltersSchema>;
+
 export const arenaQuestionResponseSchema = questionDetailResponseSchema.extend({
-  status: z.literal("OPEN"),
+  status: z.enum(["OPEN", "CLOSED", "RESOLVED", "CANCELLED"]),
 });
 export const arenaQuestionsResponseSchema = z.object({
   questions: z.array(arenaQuestionResponseSchema),
