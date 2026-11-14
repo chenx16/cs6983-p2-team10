@@ -3,7 +3,7 @@ import { z } from "zod";
 
 const envSchema = z.object({
   API_PORT: z.coerce.number().int().positive().default(4000),
-  PUBLIC_QUESTION_DETAIL_RATE_LIMIT: z.coerce.number().int().positive().default(600),
+  PUBLIC_QUESTION_DETAIL_RATE_LIMIT: z.coerce.number().int().positive().default(60),
   PREDICTION_PREAUTH_RATE_LIMIT: z.coerce.number().int().positive().default(600),
   WEB_ORIGIN: z.string().url().default("http://localhost:3000"),
   JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters"),

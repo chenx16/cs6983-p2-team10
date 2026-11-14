@@ -251,13 +251,14 @@ hooks, or application environment values to the repository.
 
 ## Known limitations
 
-The public question-detail IP limit and pre-authentication IP limit on
-prediction routes are safety nets, each defaulting to 600 requests per minute.
-They can be configured with `PUBLIC_QUESTION_DETAIL_RATE_LIMIT` and
-`PREDICTION_PREAUTH_RATE_LIMIT`. Behind Vercel and Render proxies, multiple
-users may share the same apparent IP address, so these limits are deliberately
-generous. Accurate IP-based rate limiting depends on a safe `trust proxy`
-configuration tracked in [issue #16](https://github.com/chenx16/cs6983-p2-team10/issues/16).
+The versioned public API is limited to 60 requests per minute per IP. Authenticated
+private API routes are limited to 120 requests per minute per user. Rate-limited
+responses use the consistent error shape and include both a `Retry-After` header
+and `retryAfterSeconds` value. Prediction routes also retain a pre-authentication
+IP safety limit. Configure the public and pre-authentication limits with
+`PUBLIC_QUESTION_DETAIL_RATE_LIMIT` and `PREDICTION_PREAUTH_RATE_LIMIT`.
+Interactive OpenAPI documentation covers every retained HTTP endpoint at
+`/api/docs`; WebSocket price messages are documented there as well.
 
 ## Known security issues
 
