@@ -98,6 +98,22 @@ const openApiDocument = {
           },
         },
       },
+      "/api/v1/public/questions/{questionId}/stream": {
+        get: {
+          summary: "WebSocket stream for public A/B price updates",
+          description: "Connect with WebSocket. Messages contain aggregate prices and credits only; prediction owners are never identified.",
+          parameters: [{
+            name: "questionId",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+          }],
+          responses: {
+            "101": { description: "WebSocket connection established." },
+            "404": { description: "Question is not publicly streamable." },
+          },
+        },
+      },
     },
   },
   components: {

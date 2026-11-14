@@ -6,6 +6,7 @@
   "scripts": {
     "predev": "npm run build --workspace=@forecasthub/shared",
     "dev": "tsx watch src/server.ts",
+    "prebuild": "npm run build --workspace=@forecasthub/shared",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "lint": "tsc -p tsconfig.json --noEmit",
@@ -27,6 +28,7 @@
     "jsonwebtoken": "^9.0.2",
     "supertest": "^7.3.2",
     "swagger-ui-express": "^5.0.1",
+    "ws": "^8.23.0",
     "zod": "^4.1.12"
   },
   "devDependencies": {
@@ -36,6 +38,7 @@
     "@types/node": "^22.10.2",
     "@types/supertest": "^7.2.1",
     "@types/swagger-ui-express": "^4.1.8",
+    "@types/ws": "^8.18.2",
     "prisma": "^6.16.2",
     "tsx": "^4.19.2",
     "typescript": "*",

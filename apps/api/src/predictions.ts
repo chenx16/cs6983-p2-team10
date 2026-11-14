@@ -10,6 +10,7 @@ import {
 import type { Response } from "express";
 import { prisma } from "./prisma.js";
 import type { AuthenticatedRequest } from "./auth.js";
+import { broadcastQuestionPriceUpdate } from "./live-updates.js";
 
 const errorResponse = (
   response: Response,
@@ -219,7 +220,7 @@ export const placePrediction = async (
       });
       if (existing) {
         const user = await transaction.user.findUniqueOrThrow({ where: { id: userId } });
-        return { status: 200, body: predictionResponse(existing, user.balance) };
+        return { status: 200, body: predictionResponse(existing, user.balance), broadcast: false };
       }
 
       const user = await lockUser(transaction, userId);
@@ -288,8 +289,13 @@ export const placePrediction = async (
       });
 
       const updatedUser = await transaction.user.findUniqueOrThrow({ where: { id: userId } });
-      return { status: 201, body: predictionResponse(prediction, updatedUser.balance) };
+      return { status: 201, body: predictionResponse(prediction, updatedUser.balance), broadcast: true };
     });
+    if (result.broadcast) {
+      void broadcastQuestionPriceUpdate(questionIdFrom(request)).catch((error: unknown) => {
+        console.error("Unable to broadcast public question update.", error);
+      });
+    }
     response.status(result.status).json(result.body);
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {

@@ -162,6 +162,22 @@ export const leaderboardResponseSchema = z.object({
 export type LeaderboardEntry = z.infer<typeof leaderboardEntrySchema>;
 export type LeaderboardResponse = z.infer<typeof leaderboardResponseSchema>;
 
+export const publicQuestionPriceUpdateSchema = z.object({
+  questionId: z.string().min(1),
+  marketVersion: z.number().int().nonnegative(),
+  prices: z.object({
+    a: z.number().int().min(1).max(99),
+    b: z.number().int().min(1).max(99),
+  }),
+  answers: z.array(z.object({
+    id: z.string().min(1),
+    price: z.number().int().min(1).max(99),
+    creditsSpent: z.number().int().nonnegative(),
+  })).length(2),
+  totalCreditsSpent: z.number().int().nonnegative(),
+});
+export type PublicQuestionPriceUpdate = z.infer<typeof publicQuestionPriceUpdateSchema>;
+
 export const myQuestionPredictionsResponseSchema = z.object({
   predictions: z.array(z.object({
     answerId: z.string().min(1),
