@@ -259,7 +259,7 @@ export const createApp = () => {
     }
   });
 
-  app.post("/api/v1/auth/register", publicQuestionDetailRateLimit, authMutationRateLimit, async (request, response, next) => {
+  app.post("/api/v1/auth/register", authMutationRateLimit, async (request, response, next) => {
     const parsed = registerRequestSchema.safeParse(request.body);
     if (!parsed.success) {
       response.status(400).json({ error: { code: "INVALID_INPUT", message: "Username, email, and password are invalid." } });
@@ -278,7 +278,7 @@ export const createApp = () => {
     }
   });
 
-  app.post("/api/v1/auth/login", publicQuestionDetailRateLimit, authMutationRateLimit, async (request, response, next) => {
+  app.post("/api/v1/auth/login", authMutationRateLimit, async (request, response, next) => {
     const parsed = loginRequestSchema.safeParse(request.body);
     if (!parsed.success) {
       response.status(400).json({ error: { code: "INVALID_INPUT", message: "Username or email and password are invalid." } });
@@ -302,21 +302,7 @@ export const createApp = () => {
     response.status(204).send();
   });
 
-  app.use("/api/v1/private", (request: AuthenticatedRequest, response, next) => {
-    if (!request.headers.cookie?.split(";").some((part) => part.trim().startsWith("access_token="))) {
-      next();
-      return;
-    }
-    requireAuth(request, response, (error?: unknown) => {
-      if (error) {
-        next(error);
-        return;
-      }
-      privateApiRateLimit(request, response, next);
-    });
-  });
-
-  app.get("/api/v1/private/me", authSessionRateLimit, requireAuth, async (request: AuthenticatedRequest, response, next) => {
+  app.get("/api/v1/private/me", requireAuth, privateApiRateLimit, async (request: AuthenticatedRequest, response, next) => {
     try {
       if (!request.auth) {
         response.status(401).json({ error: { code: "UNAUTHENTICATED", message: "Authentication is required." } });
@@ -341,7 +327,7 @@ export const createApp = () => {
     }
   });
 
-  app.get("/api/v1/private/predictions", authSessionRateLimit, requireAuth, async (request: AuthenticatedRequest, response, next) => {
+  app.get("/api/v1/private/predictions", requireAuth, privateApiRateLimit, async (request: AuthenticatedRequest, response, next) => {
     try {
       await getMyPredictionHistory(request, response);
     } catch (error) {
@@ -349,7 +335,7 @@ export const createApp = () => {
     }
   });
 
-  app.get("/api/v1/private/organizer/questions", requireAuth, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
+  app.get("/api/v1/private/organizer/questions", requireAuth, privateApiRateLimit, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
     try {
       response.json({ questions: await listOrganizerQuestions(request.auth!.userId) });
     } catch (error) {
@@ -365,7 +351,7 @@ export const createApp = () => {
     }
   });
 
-  app.post("/api/v1/private/organizer/questions/:questionId/resolve", requireAuth, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
+  app.post("/api/v1/private/organizer/questions/:questionId/resolve", requireAuth, privateApiRateLimit, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
     const parsed = resolveAbQuestionRequestSchema.safeParse(request.body);
     if (!parsed.success) {
       response.status(400).json({ error: { code: "INVALID_INPUT", message: parsed.error.issues.map((issue) => issue.message).join(" ") } });
@@ -383,7 +369,7 @@ export const createApp = () => {
     }
   });
 
-  app.post("/api/v1/private/organizer/questions", requireAuth, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
+  app.post("/api/v1/private/organizer/questions", requireAuth, privateApiRateLimit, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
     const parsed = abQuestionRequestSchema.safeParse(request.body);
     if (!parsed.success) {
       const message = parsed.error.issues.map((issue) => issue.message).join(" ");
@@ -406,7 +392,7 @@ export const createApp = () => {
     }
   });
 
-  app.patch("/api/v1/private/organizer/questions/:questionId", requireAuth, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
+  app.patch("/api/v1/private/organizer/questions/:questionId", requireAuth, privateApiRateLimit, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
     const parsed = abQuestionRequestSchema.safeParse(request.body);
     if (!parsed.success) {
       const message = parsed.error.issues.map((issue) => issue.message).join(" ");
@@ -429,7 +415,7 @@ export const createApp = () => {
     }
   });
 
-  app.post("/api/v1/private/organizer/questions/:questionId/publish", requireAuth, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
+  app.post("/api/v1/private/organizer/questions/:questionId/publish", requireAuth, privateApiRateLimit, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
     try {
       const question = await publishOrganizerQuestion(request.auth!.userId, String(request.params.questionId));
       response.json({ question });
@@ -442,7 +428,7 @@ export const createApp = () => {
     }
   });
 
-  app.post("/api/v1/private/organizer/questions/:questionId/finalize", requireAuth, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
+  app.post("/api/v1/private/organizer/questions/:questionId/finalize", requireAuth, privateApiRateLimit, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
     try {
       const question = await finalizeOrganizerQuestion(request.auth!.userId, String(request.params.questionId));
       response.json({ question });
@@ -471,7 +457,7 @@ export const createApp = () => {
     }
   });
 
-  app.get("/api/v1/private/admin/users", requireAuth, requireAdministrator, async (_request, response, next) => {
+  app.get("/api/v1/private/admin/users", requireAuth, privateApiRateLimit, requireAdministrator, async (_request, response, next) => {
     try {
       const page = Number(_request.query.page) || 1;
       const search = typeof _request.query.search === "string" ? _request.query.search.trim().slice(0, 100) : "";
@@ -481,7 +467,7 @@ export const createApp = () => {
     }
   });
 
-  app.get("/api/v1/private/admin/questions", requireAuth, requireAdministrator, async (_request, response, next) => {
+  app.get("/api/v1/private/admin/questions", requireAuth, privateApiRateLimit, requireAdministrator, async (_request, response, next) => {
     try {
       const page = Number(_request.query.page) || 1;
       const search = typeof _request.query.search === "string" ? _request.query.search.trim().slice(0, 100) : "";
@@ -491,7 +477,7 @@ export const createApp = () => {
     }
   });
 
-  app.get("/api/v1/private/admin/history", requireAuth, requireAdministrator, async (request, response, next) => {
+  app.get("/api/v1/private/admin/history", requireAuth, privateApiRateLimit, requireAdministrator, async (request, response, next) => {
     try {
       const page = Number(request.query.page) || 1;
       response.json(await listAdministratorHistory(page));
@@ -500,7 +486,7 @@ export const createApp = () => {
     }
   });
 
-  app.patch("/api/v1/private/admin/users/:userId/role", requireAuth, requireAdministrator, async (request: AuthenticatedRequest, response, next) => {
+  app.patch("/api/v1/private/admin/users/:userId/role", requireAuth, privateApiRateLimit, requireAdministrator, async (request: AuthenticatedRequest, response, next) => {
     const parsed = roleChangeRequestSchema.safeParse(request.body);
     if (!parsed.success || !request.auth) {
       response.status(400).json({ error: { code: "INVALID_INPUT", message: "Role and reason are invalid." } });
@@ -519,7 +505,7 @@ export const createApp = () => {
     }
   });
 
-  app.post("/api/v1/private/admin/questions/:questionId/cancel", requireAuth, requireAdministrator, async (request: AuthenticatedRequest, response, next) => {
+  app.post("/api/v1/private/admin/questions/:questionId/cancel", requireAuth, privateApiRateLimit, requireAdministrator, async (request: AuthenticatedRequest, response, next) => {
     const parsed = questionCancellationRequestSchema.safeParse(request.body);
     if (!parsed.success || !request.auth) {
       response.status(400).json({ error: { code: "INVALID_INPUT", message: "A cancellation reason is required." } });
