@@ -335,7 +335,7 @@ export const createApp = () => {
     }
   });
 
-  app.get("/api/v1/private/organizer/questions", requireAuth, privateApiRateLimit, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
+  app.get("/api/v1/private/organizer/questions", requireAuth, requireOrganizer, privateApiRateLimit, async (request: AuthenticatedRequest, response, next) => {
     try {
       response.json({ questions: await listOrganizerQuestions(request.auth!.userId) });
     } catch (error) {
