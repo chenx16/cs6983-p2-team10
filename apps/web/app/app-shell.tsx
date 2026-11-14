@@ -33,6 +33,7 @@ export function AppShell({
         <nav aria-label="Primary navigation" className="nav-links">
           <button className={view === "arena" ? "active" : ""} onClick={() => onNavigate("arena")}><span aria-hidden="true" className="icon">⌂</span> Arena</button>
           <button className={view === "leaderboard" ? "active" : ""} onClick={() => onNavigate("leaderboard")}><span aria-hidden="true" className="icon">♜</span> Leaderboard</button>
+          {user && <button className={view === "profile" ? "active" : ""} onClick={() => onNavigate("profile")}><span aria-hidden="true" className="icon">◉</span> My predictions</button>}
           {user?.role === "ADMINISTRATOR" && <button className={view === "admin" ? "active" : ""} onClick={() => onNavigate("admin")}><span aria-hidden="true" className="icon">⚙</span> Administration</button>}
           {(user?.role === "ORGANIZER" || user?.role === "ADMINISTRATOR") && <button className={view === "organizer" ? "active" : ""} onClick={() => onNavigate("organizer")}><span aria-hidden="true" className="icon">✎</span> Organizer</button>}
           <a href={apiDocsUrl}><span aria-hidden="true" className="icon">⌁</span> API docs</a>

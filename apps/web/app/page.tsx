@@ -9,7 +9,7 @@ import { AppShell, type AuthMode, type View } from "./app-shell";
 import { AdminPage } from "./admin-page";
 import { OrganizerPage } from "./organizer-page";
 import { getCategories, type OrganizerCategory } from "./organizer-client";
-import { arenaQuestionsResponseSchema, type ArenaFilters, type ArenaQuestionResponse } from "@forecasthub/shared";
+import { arenaQuestionsResponseSchema, predictionHistoryResponseSchema, type ArenaFilters, type ArenaQuestionResponse, type PredictionHistoryResponse } from "@forecasthub/shared";
 
 const statusFilters: { value: ArenaFilters["status"]; label: string }[] = [
   { value: "OPEN", label: "Open" },
@@ -143,6 +143,42 @@ function Leaderboard() {
   return <><div className="breadcrumbs">ForecastHub <span>›</span> <b>Leaderboard</b></div><div className="page-heading"><div><p className="eyebrow">All time</p><h1>Forecast well. Learn publicly.</h1></div></div><div className="panel leaderboard-panel"><table><caption className="sr-only">ForecastHub leaderboard</caption><thead><tr><th>Rank</th><th>Username</th><th>Scored questions</th><th>Success rate</th></tr></thead><tbody>{leaderboard.map((row) => <tr key={row.username}><td>{row.rank}</td><td><strong>{row.username}</strong></td><td>{row.scored}</td><td>{row.success}</td></tr>)}</tbody></table></div></>;
 }
 
+function PredictionHistory() {
+  const [history, setHistory] = useState<PredictionHistoryResponse["predictions"]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    void fetch("/api/v1/private/predictions", { credentials: "include" })
+      .then(async (response) => {
+        const payload: unknown = await response.json();
+        if (!response.ok) throw new Error("Unable to load your prediction history.");
+        return predictionHistoryResponseSchema.parse(payload);
+      })
+      .then((payload) => setHistory(payload.predictions))
+      .catch((requestError: unknown) => setError(requestError instanceof Error ? requestError.message : "Unable to load your prediction history."))
+      .finally(() => setLoading(false));
+  }, []);
+  return (
+    <>
+      <div className="breadcrumbs">ForecastHub <span>›</span> <b>My predictions</b></div>
+      <div className="page-heading"><div><p className="eyebrow">Private history</p><h1>Your predictions</h1><p className="muted">Review your choices and settled outcomes.</p></div></div>
+      {loading && <p role="status">Loading prediction history…</p>}
+      {error && <p className="error-message" role="alert">{error}</p>}
+      {!loading && !error && history.length === 0 && <div className="empty-state"><strong>No predictions yet.</strong><span>Your predictions will appear here after you make one.</span></div>}
+      {!loading && !error && history.length > 0 && (
+        <div className="history-list" aria-label="Prediction history">
+          {history.map((item) => (
+            <article className="panel history-row" key={item.id}>
+              <div><strong>{item.questionTitle}</strong><span>Selected {item.answerText} · {new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", dateStyle: "medium", timeStyle: "short" }).format(new Date(item.createdAt))} PT</span></div>
+              <div><span>{item.creditsCharged.toLocaleString()} credits · {(item.shares / 100).toFixed(2)} shares</span><strong className={item.outcome === "WON" ? "prediction-won" : item.outcome === "LOST" ? "prediction-lost" : ""}>{item.outcome === "WON" ? `Won · ${item.settlementAmount.toLocaleString()} credits paid` : item.outcome === "LOST" ? "Lost" : item.outcome === "REFUNDED" ? `Refunded · ${item.settlementAmount.toLocaleString()} credits returned` : "Pending"}</strong></div>
+            </article>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
 export default function HomePage() {
   const [view, setView] = useState<View>("arena");
   const [authMode, setAuthMode] = useState<AuthMode>("login");
@@ -163,6 +199,7 @@ export default function HomePage() {
   const content = useMemo(() => {
     if (view === "sign-in") return <SignIn mode={authMode} onBack={handleAuthenticated} />;
     if (view === "leaderboard") return <Leaderboard />;
+    if (view === "profile") return user ? <PredictionHistory /> : <AuthPage initialMode="login" onAuthenticated={handleAuthenticated} />;
     if (view === "admin") return <AdminPage user={user} />;
     if (view === "organizer") return <OrganizerPage user={user} />;
     return <Arena />;
