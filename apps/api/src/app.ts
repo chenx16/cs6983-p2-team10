@@ -9,7 +9,7 @@ import { OrganizerActionError, createOrganizerQuestion, finalizeOrganizerQuestio
 import { env } from "./env.js";
 import { prisma } from "./prisma.js";
 import { placePrediction, previewPrediction } from "./predictions.js";
-import { getMyQuestionPredictions, getPublicQuestionDetail, listPublicArenaQuestions } from "./question-detail.js";
+import { getMyPredictionHistory, getMyQuestionPredictions, getPublicQuestionDetail, listPublicArenaQuestions } from "./question-detail.js";
 import { listReadyToResolve, resolveAbQuestion, ResolutionError } from "./resolution.js";
 import { resolveAbQuestionRequestSchema } from "@forecasthub/shared";
 
@@ -332,6 +332,14 @@ export const createApp = () => {
   app.get("/api/v1/private/questions/:questionId/predictions", predictionPreAuthRateLimit, requireAuth, myQuestionPredictionsRateLimit, async (request: AuthenticatedRequest, response, next) => {
     try {
       await getMyQuestionPredictions(request, response);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/v1/private/predictions", authSessionRateLimit, requireAuth, async (request: AuthenticatedRequest, response, next) => {
+    try {
+      await getMyPredictionHistory(request, response);
     } catch (error) {
       next(error);
     }

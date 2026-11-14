@@ -124,6 +124,18 @@ PATCH /api/v1/private/admin/users/:userId/role
 POST  /api/v1/private/admin/questions/:questionId/cancel
 ```
 
+Authenticated users can review their own prediction history:
+
+```text
+GET   /api/v1/private/predictions
+```
+
+The response is private to the signed-in user and includes the question,
+selected answer, credits charged, shares, Pacific-time prediction timestamp,
+and a timestamp displayed in Pacific Time, plus pending, won, lost, or
+refunded settlement status. It never exposes
+another user's predictions.
+
 User and question lists are paginated and searchable so the UI does not load
 all records at once. Administrators can use the history endpoint to review
 immutable role-change, cancellation, and refund records. Role changes require a

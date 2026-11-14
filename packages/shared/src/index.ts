@@ -153,6 +153,23 @@ export const myQuestionPredictionsResponseSchema = z.object({
 });
 export type MyQuestionPredictionsResponse = z.infer<typeof myQuestionPredictionsResponseSchema>;
 
+export const predictionHistoryResponseSchema = z.object({
+  predictions: z.array(z.object({
+    id: z.string().min(1),
+    questionId: z.string().min(1),
+    questionTitle: z.string(),
+    answerText: z.string(),
+    questionStatus: z.string(),
+    deadline: z.string().datetime(),
+    creditsCharged: z.number().int().nonnegative(),
+    shares: z.number().int().nonnegative(),
+    outcome: z.enum(["PENDING", "WON", "LOST", "REFUNDED"]),
+    settlementAmount: z.number().int().nonnegative(),
+    createdAt: z.string().datetime(),
+  })),
+});
+export type PredictionHistoryResponse = z.infer<typeof predictionHistoryResponseSchema>;
+
 export const resolveAbQuestionRequestSchema = z.object({
   answerId: z.string().trim().min(1),
   evidenceNote: z.string().trim().min(1).max(2000),
