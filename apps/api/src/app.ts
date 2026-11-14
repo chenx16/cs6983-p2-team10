@@ -14,89 +14,33 @@ import { listReadyToResolve, resolveAbQuestion, ResolutionError } from "./resolu
 import { resolveAbQuestionRequestSchema } from "@forecasthub/shared";
 import { getPublicLeaderboard } from "./leaderboard.js";
 
-const openApiDocument = {
+export const openApiDocument = {
   openapi: "3.0.3",
   info: {
     title: "ForecastHub API",
     version: "0.1.0",
-    description: "Versioned API foundation for the ForecastHub prediction platform.",
+    description: "Versioned A/B prediction API. Public responses contain aggregates only; private routes require the access_token cookie.",
   },
   servers: [{ url: "/" }],
   paths: {
+    "/health": { get: { summary: "Check process health", responses: { "200": { description: "Healthy", content: { "application/json": { schema: { $ref: "#/components/schemas/HealthResponse" } } } } } } },
+    "/api/v1/public/health": { get: { summary: "Check public API health", responses: { "200": { description: "Healthy", content: { "application/json": { schema: { $ref: "#/components/schemas/HealthResponse" } } } } } } },
     "/api/v1/public/questions": {
       get: {
-        summary: "List visible, published questions",
+        summary: "List public A/B questions",
         parameters: [
-          { name: "category", in: "query", description: "Category IDs; repeat the parameter to select multiple categories.", schema: { type: "array", items: { type: "string" } }, style: "form", explode: true },
+          { name: "category", in: "query", description: "Repeat for multiple category IDs.", schema: { type: "array", items: { type: "string" } }, style: "form", explode: true },
           { name: "status", in: "query", schema: { type: "string", enum: ["OPEN", "CLOSING_SOON", "CLOSED", "RESOLVED", "CANCELLED"], default: "OPEN" } },
-          { name: "type", in: "query", description: "Multi-answer questions are not supported in this release.", schema: { type: "string", enum: ["AB", "MULTI_ANSWER"], default: "AB" } },
+          { name: "type", in: "query", schema: { type: "string", enum: ["AB", "MULTI_ANSWER"], default: "AB" } },
         ],
-        responses: {
-          "200": { description: "Questions with public aggregate prices and credit totals." },
-          "400": { description: "Invalid filters." },
-          "429": { description: "Rate limit exceeded." },
-        },
+        responses: { "200": { description: "Aggregate question data." }, "400": { $ref: "#/components/responses/InvalidInput" }, "429": { $ref: "#/components/responses/RateLimited" } },
       },
     },
-    "/api/v1/public/health": {
+    "/api/v1/public/questions/{questionId}": {
       get: {
-        summary: "Check API health",
-        responses: {
-          "200": {
-            description: "The API is ready.",
-            content: { "application/json": { schema: { $ref: "#/components/schemas/HealthResponse" } } },
-          },
-        },
-        "/api/v1/public/questions/{questionId}": {
-          get: {
-            summary: "Get public A/B question details and crowd aggregates",
-            parameters: [{
-              name: "questionId",
-              in: "path",
-              required: true,
-              schema: { type: "string" },
-            }],
-            responses: {
-              "200": {
-                description: "Public question details and aggregate prediction data.",
-                content: { "application/json": { schema: { $ref: "#/components/schemas/QuestionDetailResponse" } } },
-              },
-              "404": { description: "Question not found." },
-              "429": { description: "Rate limit exceeded." },
-            },
-          },
-          "/api/v1/public/leaderboard": {
-            get: {
-              summary: "Get the public forecasting leaderboard",
-              description: "Returns ranked active users using resolved A/B predictions. Balances and net gain are never included.",
-              responses: {
-                "200": { description: "Public leaderboard entries." },
-                "429": { description: "Rate limit exceeded." },
-              },
-            },
-          },
-        },
-        "/api/v1/private/questions/{questionId}/predictions": {
-          get: {
-            summary: "Get the authenticated user's predictions for a question",
-            security: [{ cookieAuth: [] }],
-            parameters: [{
-              name: "questionId",
-              in: "path",
-              required: true,
-              schema: { type: "string" },
-            }],
-            responses: {
-              "200": {
-                description: "The authenticated user's predictions.",
-                content: { "application/json": { schema: { $ref: "#/components/schemas/MyQuestionPredictionsResponse" } } },
-              },
-              "401": { description: "Authentication required." },
-              "404": { description: "Question not found." },
-              "429": { description: "Rate limit exceeded." },
-            },
-          },
-        },
+        summary: "Get public A/B question details",
+        parameters: [{ $ref: "#/components/parameters/QuestionId" }],
+        responses: { "200": { description: "Question details and aggregate prices." }, "404": { $ref: "#/components/responses/NotFound" }, "429": { $ref: "#/components/responses/RateLimited" } },
       },
       "/api/v1/public/questions/{questionId}/stream": {
         get: {
@@ -115,77 +59,92 @@ const openApiDocument = {
         },
       },
     },
-  },
-  components: {
-    securitySchemes: {
-      cookieAuth: {
-        type: "apiKey",
-        in: "cookie",
-        name: "access_token",
+    "/api/v1/public/questions/{questionId}/stream": {
+      get: {
+        summary: "WebSocket stream for public A/B price updates",
+        description: "Upgrade this path to WebSocket. Messages include only aggregate prices and credits.",
+        parameters: [{ $ref: "#/components/parameters/QuestionId" }],
+        responses: { "101": { description: "WebSocket connection established." }, "404": { $ref: "#/components/responses/NotFound" } },
       },
     },
-    schemas: {
-      HealthResponse: {
-        type: "object",
-        required: ["status", "service", "timestamp"],
-        properties: {
-          status: { type: "string", enum: ["ok"] },
-          service: { type: "string" },
-          timestamp: { type: "string", format: "date-time" },
-        },
-        QuestionDetailResponse: {
-          type: "object",
-          description: "Public question data and aggregate predictions; no individual prediction details.",
-          properties: {
-            id: { type: "string" },
-            title: { type: "string" },
-            category: { type: "string" },
-            status: { type: "string" },
-            deadline: { type: "string", format: "date-time" },
-            eventTime: { type: "string", format: "date-time" },
-            outcomeCriteria: { type: "string" },
-            source: { type: "string" },
-            totalCreditsSpent: { type: "integer" },
-            answers: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  id: { type: "string" },
-                  text: { type: "string" },
-                  price: { type: "integer" },
-                  creditsSpent: { type: "integer" },
-                },
-              },
-            },
-          },
-        },
-        MyQuestionPredictionsResponse: {
-          type: "object",
-          properties: {
-            predictions: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  answerId: { type: "string" },
-                  answerText: { type: "string" },
-                  creditsCharged: { type: "integer" },
-                  shares: { type: "integer", description: "Hundredths of a share." },
-                  payoutIfCorrect: { type: "integer", description: "Credits." },
-                  createdAt: { type: "string", format: "date-time" },
-                },
-              },
-            },
-          },
-        },
+    "/api/v1/public/categories": { get: { summary: "List question categories", responses: { "200": { description: "Category IDs and names." }, "429": { $ref: "#/components/responses/RateLimited" } } } },
+    "/api/v1/public/leaderboard": { get: { summary: "Get the public leaderboard", description: "Returns rank, username, scored questions, and success rate only.", responses: { "200": { description: "Leaderboard entries." }, "429": { $ref: "#/components/responses/RateLimited" } } } },
+    "/api/v1/auth/register": {
+      post: {
+        summary: "Register an account",
+        requestBody: { required: true, content: { "application/json": { schema: { $ref: "#/components/schemas/RegisterRequest" }, example: { username: "forecaster", email: "user@example.com", password: "CorrectHorse1" } } } },
+        responses: { "201": { description: "Account created." }, "400": { $ref: "#/components/responses/InvalidInput" }, "409": { description: "Duplicate account." }, "429": { $ref: "#/components/responses/RateLimited" } },
       },
+    },
+    "/api/v1/auth/login": {
+      post: {
+        summary: "Sign in",
+        requestBody: { required: true, content: { "application/json": { schema: { $ref: "#/components/schemas/LoginRequest" }, example: { identifier: "forecaster", password: "CorrectHorse1" } } } },
+        responses: { "200": { description: "Signed-in user and access cookie." }, "400": { $ref: "#/components/responses/InvalidInput" }, "401": { $ref: "#/components/responses/Unauthenticated" }, "429": { $ref: "#/components/responses/RateLimited" } },
+      },
+    },
+    "/api/v1/auth/logout": { post: { summary: "Sign out", responses: { "204": { description: "Cookie cleared." }, "429": { $ref: "#/components/responses/RateLimited" } } } },
+    "/api/v1/private/me": { get: { summary: "Get the current user", security: [{ cookieAuth: [] }], responses: { "200": { description: "Private user profile." }, "401": { $ref: "#/components/responses/Unauthenticated" }, "429": { $ref: "#/components/responses/RateLimited" } } } },
+    "/api/v1/private/predictions": { get: { summary: "Get the current user's prediction history", security: [{ cookieAuth: [] }], responses: { "200": { description: "Private prediction history." }, "401": { $ref: "#/components/responses/Unauthenticated" }, "429": { $ref: "#/components/responses/RateLimited" } } } },
+    "/api/v1/private/questions/{questionId}/predictions": {
+      get: { summary: "Get the current user's predictions for a question", security: [{ cookieAuth: [] }], parameters: [{ $ref: "#/components/parameters/QuestionId" }], responses: { "200": { description: "Private predictions." }, "401": { $ref: "#/components/responses/Unauthenticated" }, "404": { $ref: "#/components/responses/NotFound" }, "429": { $ref: "#/components/responses/RateLimited" } } },
+      post: { summary: "Place a prediction", security: [{ cookieAuth: [] }], parameters: [{ $ref: "#/components/parameters/QuestionId" }], requestBody: { required: true, content: { "application/json": { schema: { $ref: "#/components/schemas/PlacePredictionRequest" }, example: { answerId: "answer-id", budget: 100, minShares: 190, idempotencyKey: "request-123" } } } }, responses: { "201": { description: "Prediction created." }, "400": { $ref: "#/components/responses/InvalidInput" }, "401": { $ref: "#/components/responses/Unauthenticated" }, "409": { description: "Price changed or request was already processed." }, "429": { $ref: "#/components/responses/RateLimited" } } },
+    },
+    "/api/v1/private/questions/{questionId}/predictions/preview": { post: { summary: "Preview a prediction", security: [{ cookieAuth: [] }], parameters: [{ $ref: "#/components/parameters/QuestionId" }], requestBody: { required: true, content: { "application/json": { schema: { $ref: "#/components/schemas/PredictionPreviewRequest" }, example: { answerId: "answer-id", budget: 100 } } } }, responses: { "200": { description: "Server-calculated prediction preview." }, "400": { $ref: "#/components/responses/InvalidInput" }, "401": { $ref: "#/components/responses/Unauthenticated" }, "429": { $ref: "#/components/responses/RateLimited" } } } },
+    "/api/v1/private/organizer/questions": {
+      get: { summary: "List the organizer's questions", security: [{ cookieAuth: [] }], responses: { "200": { description: "Owned questions." }, "401": { $ref: "#/components/responses/Unauthenticated" }, "403": { $ref: "#/components/responses/Forbidden" }, "429": { $ref: "#/components/responses/RateLimited" } } },
+      post: { summary: "Create an A/B question draft", security: [{ cookieAuth: [] }], requestBody: { required: true, content: { "application/json": { schema: { $ref: "#/components/schemas/AbQuestionRequest" } } } }, responses: { "201": { description: "Draft created." }, "400": { $ref: "#/components/responses/InvalidInput" }, "401": { $ref: "#/components/responses/Unauthenticated" }, "403": { $ref: "#/components/responses/Forbidden" }, "429": { $ref: "#/components/responses/RateLimited" } } },
+    },
+    "/api/v1/private/organizer/questions/{questionId}": { patch: { summary: "Update an owned draft", security: [{ cookieAuth: [] }], parameters: [{ $ref: "#/components/parameters/QuestionId" }], requestBody: { required: true, content: { "application/json": { schema: { $ref: "#/components/schemas/AbQuestionRequest" } } } }, responses: { "200": { description: "Updated question." }, "400": { $ref: "#/components/responses/InvalidInput" }, "401": { $ref: "#/components/responses/Unauthenticated" }, "403": { $ref: "#/components/responses/Forbidden" }, "404": { $ref: "#/components/responses/NotFound" }, "429": { $ref: "#/components/responses/RateLimited" } } } },
+    "/api/v1/private/organizer/questions/{questionId}/publish": { post: { summary: "Publish an owned draft", security: [{ cookieAuth: [] }], parameters: [{ $ref: "#/components/parameters/QuestionId" }], responses: { "200": { description: "Published question." }, "401": { $ref: "#/components/responses/Unauthenticated" }, "403": { $ref: "#/components/responses/Forbidden" }, "404": { $ref: "#/components/responses/NotFound" }, "409": { description: "Invalid question state." }, "429": { $ref: "#/components/responses/RateLimited" } } } },
+    "/api/v1/private/organizer/questions/{questionId}/finalize": { post: { summary: "Close an owned question", security: [{ cookieAuth: [] }], parameters: [{ $ref: "#/components/parameters/QuestionId" }], responses: { "200": { description: "Closed question." }, "401": { $ref: "#/components/responses/Unauthenticated" }, "403": { $ref: "#/components/responses/Forbidden" }, "404": { $ref: "#/components/responses/NotFound" }, "409": { description: "Invalid question state." }, "429": { $ref: "#/components/responses/RateLimited" } } } },
+    "/api/v1/private/organizer/questions/ready-to-resolve": { get: { summary: "List questions ready to resolve", security: [{ cookieAuth: [] }], responses: { "200": { description: "Eligible questions." }, "401": { $ref: "#/components/responses/Unauthenticated" }, "403": { $ref: "#/components/responses/Forbidden" }, "429": { $ref: "#/components/responses/RateLimited" } } } },
+    "/api/v1/private/organizer/questions/{questionId}/resolve": { post: { summary: "Resolve an A/B question and settle predictions", security: [{ cookieAuth: [] }], parameters: [{ $ref: "#/components/parameters/QuestionId" }], requestBody: { required: true, content: { "application/json": { schema: { $ref: "#/components/schemas/ResolveRequest" }, example: { answerId: "answer-id", evidenceNote: "Verified source evidence." } } } }, responses: { "200": { description: "Resolved question." }, "400": { $ref: "#/components/responses/InvalidInput" }, "401": { $ref: "#/components/responses/Unauthenticated" }, "403": { $ref: "#/components/responses/Forbidden" }, "409": { description: "Question cannot be resolved." }, "429": { $ref: "#/components/responses/RateLimited" } } } },
+    "/api/v1/private/admin/users": { get: { summary: "List users", security: [{ cookieAuth: [] }], parameters: [{ $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/Search" }], responses: { "200": { description: "Paginated users." }, "401": { $ref: "#/components/responses/Unauthenticated" }, "403": { $ref: "#/components/responses/Forbidden" }, "429": { $ref: "#/components/responses/RateLimited" } } } },
+    "/api/v1/private/admin/questions": { get: { summary: "List questions for administration", security: [{ cookieAuth: [] }], parameters: [{ $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/Search" }], responses: { "200": { description: "Paginated questions." }, "401": { $ref: "#/components/responses/Unauthenticated" }, "403": { $ref: "#/components/responses/Forbidden" }, "429": { $ref: "#/components/responses/RateLimited" } } } },
+    "/api/v1/private/admin/history": { get: { summary: "List administrative audit history", security: [{ cookieAuth: [] }], parameters: [{ $ref: "#/components/parameters/Page" }], responses: { "200": { description: "Paginated audit history." }, "401": { $ref: "#/components/responses/Unauthenticated" }, "403": { $ref: "#/components/responses/Forbidden" }, "429": { $ref: "#/components/responses/RateLimited" } } } },
+    "/api/v1/private/admin/users/{userId}/role": { patch: { summary: "Change a user's role", security: [{ cookieAuth: [] }], parameters: [{ $ref: "#/components/parameters/UserId" }], requestBody: { required: true, content: { "application/json": { schema: { $ref: "#/components/schemas/RoleChangeRequest" } } } }, responses: { "200": { description: "Updated user." }, "400": { $ref: "#/components/responses/InvalidInput" }, "401": { $ref: "#/components/responses/Unauthenticated" }, "403": { $ref: "#/components/responses/Forbidden" }, "404": { $ref: "#/components/responses/NotFound" }, "409": { description: "Role change rejected." }, "429": { $ref: "#/components/responses/RateLimited" } } } },
+    "/api/v1/private/admin/questions/{questionId}/cancel": { post: { summary: "Cancel a question and refund predictions", security: [{ cookieAuth: [] }], parameters: [{ $ref: "#/components/parameters/QuestionId" }], requestBody: { required: true, content: { "application/json": { schema: { $ref: "#/components/schemas/CancellationRequest" } } } }, responses: { "200": { description: "Cancelled question and refund result." }, "400": { $ref: "#/components/responses/InvalidInput" }, "401": { $ref: "#/components/responses/Unauthenticated" }, "403": { $ref: "#/components/responses/Forbidden" }, "404": { $ref: "#/components/responses/NotFound" }, "409": { description: "Cancellation rejected." }, "429": { $ref: "#/components/responses/RateLimited" } } } },
+  },
+  components: {
+    securitySchemes: { cookieAuth: { type: "apiKey", in: "cookie", name: "access_token" } },
+    parameters: {
+      QuestionId: { name: "questionId", in: "path", required: true, schema: { type: "string" } },
+      UserId: { name: "userId", in: "path", required: true, schema: { type: "string" } },
+      Page: { name: "page", in: "query", schema: { type: "integer", minimum: 1, default: 1 } },
+      Search: { name: "search", in: "query", schema: { type: "string", maxLength: 100 } },
+    },
+    responses: {
+      InvalidInput: { description: "Invalid request.", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" }, example: { error: { code: "INVALID_INPUT", message: "Invalid request." } } } } },
+      Unauthenticated: { description: "Authentication is required or the token is invalid." },
+      Forbidden: { description: "The authenticated user lacks the required role." },
+      NotFound: { description: "Resource not found." },
+      RateLimited: { description: "Rate limit exceeded. Retry after the response's Retry-After header or retryAfterSeconds value." },
+    },
+    schemas: {
+      ErrorResponse: { type: "object", required: ["error"], properties: { error: { type: "object", required: ["code", "message"], properties: { code: { type: "string" }, message: { type: "string" } } } }, retryAfterSeconds: { type: "integer", description: "Seconds before retrying a rate-limited request." } },
+      HealthResponse: { type: "object", properties: { status: { type: "string", enum: ["ok"] }, service: { type: "string" }, timestamp: { type: "string", format: "date-time" } } },
+      RegisterRequest: { type: "object", required: ["username", "email", "password"], properties: { username: { type: "string" }, email: { type: "string", format: "email" }, password: { type: "string", format: "password" } } },
+      LoginRequest: { type: "object", required: ["identifier", "password"], properties: { identifier: { type: "string" }, password: { type: "string", format: "password" } } },
+      AbQuestionRequest: { type: "object", required: ["title", "categoryId", "answerA", "answerB", "deadline", "eventTime", "outcomeCriteria", "source"], properties: { title: { type: "string" }, categoryId: { type: "string" }, answerA: { type: "string" }, answerB: { type: "string" }, startingPriceA: { type: "integer", minimum: 10, maximum: 90 }, deadline: { type: "string", format: "date-time" }, eventTime: { type: "string", format: "date-time" }, outcomeCriteria: { type: "string" }, source: { type: "string" } } },
+      PredictionPreviewRequest: { type: "object", required: ["answerId", "budget"], properties: { answerId: { type: "string" }, budget: { type: "integer", minimum: 10 } } },
+      PlacePredictionRequest: { type: "object", required: ["answerId", "budget", "minShares", "idempotencyKey"], properties: { answerId: { type: "string" }, budget: { type: "integer", minimum: 10 }, minShares: { type: "integer", minimum: 0 }, idempotencyKey: { type: "string" } } },
+      ResolveRequest: { type: "object", required: ["answerId", "evidenceNote"], properties: { answerId: { type: "string" }, evidenceNote: { type: "string" } } },
+      RoleChangeRequest: { type: "object", required: ["role", "reason"], properties: { role: { type: "string", enum: ["USER", "ORGANIZER", "ADMINISTRATOR"] }, reason: { type: "string" } } },
+      CancellationRequest: { type: "object", required: ["reason"], properties: { reason: { type: "string" } } },
     },
   },
 };
 
 export const createApp = () => {
   const app = express();
+  const rateLimitHandler = (message: string) => (_request: unknown, response: express.Response) => {
+    response.setHeader("Retry-After", "60");
+    response.status(429).json({
+      error: { code: "RATE_LIMITED", message },
+      retryAfterSeconds: 60,
+    });
+  };
   const predictionRateLimitKey = (request: AuthenticatedRequest) => {
     if (!request.auth) {
       throw new Error("Prediction rate limiting requires authentication.");
@@ -193,45 +152,35 @@ export const createApp = () => {
     return request.auth.userId;
   };
   const authMutationRateLimit = rateLimit({
-    handler: (_request, response) => {
-      response.status(429).json({ error: { code: "RATE_LIMITED", message: "Too many authentication attempts. Try again later." } });
-    },
+    handler: rateLimitHandler("Too many authentication attempts. Try again later."),
     legacyHeaders: false,
     max: 10,
     standardHeaders: true,
     windowMs: 15 * 60 * 1000,
   });
   const authSessionRateLimit = rateLimit({
-    handler: (_request, response) => {
-      response.status(429).json({ error: { code: "RATE_LIMITED", message: "Too many authentication requests. Try again later." } });
-    },
+    handler: rateLimitHandler("Too many authentication requests. Try again later."),
     legacyHeaders: false,
     max: 100,
     standardHeaders: true,
     windowMs: 15 * 60 * 1000,
   });
   const predictionPreAuthRateLimit = rateLimit({
-    handler: (_request, response) => {
-      response.status(429).json({ error: { code: "RATE_LIMITED", message: "Too many prediction requests. Try again later." } });
-    },
+    handler: rateLimitHandler("Too many prediction requests. Try again later."),
     legacyHeaders: false,
     max: env.PREDICTION_PREAUTH_RATE_LIMIT,
     standardHeaders: true,
     windowMs: 60 * 1000,
   });
   const publicQuestionDetailRateLimit = rateLimit({
-    handler: (_request, response) => {
-      response.status(429).json({ error: { code: "RATE_LIMITED", message: "Too many question detail requests. Try again later." } });
-    },
+    handler: rateLimitHandler("Too many public API requests. Try again later."),
     legacyHeaders: false,
     max: env.PUBLIC_QUESTION_DETAIL_RATE_LIMIT,
     standardHeaders: true,
     windowMs: 60 * 1000,
   });
   const predictionPreviewRateLimit = rateLimit({
-    handler: (_request, response) => {
-      response.status(429).json({ error: { code: "RATE_LIMITED", message: "Too many preview requests. Try again later." } });
-    },
+    handler: rateLimitHandler("Too many preview requests. Try again later."),
     keyGenerator: predictionRateLimitKey,
     legacyHeaders: false,
     max: 120,
@@ -239,9 +188,7 @@ export const createApp = () => {
     windowMs: 60 * 1000,
   });
   const predictionPlacementRateLimit = rateLimit({
-    handler: (_request, response) => {
-      response.status(429).json({ error: { code: "RATE_LIMITED", message: "Too many prediction requests. Try again later." } });
-    },
+    handler: rateLimitHandler("Too many prediction requests. Try again later."),
     keyGenerator: predictionRateLimitKey,
     legacyHeaders: false,
     max: 120,
@@ -249,9 +196,7 @@ export const createApp = () => {
     windowMs: 60 * 1000,
   });
   const myQuestionPredictionsRateLimit = rateLimit({
-    handler: (_request, response) => {
-      response.status(429).json({ error: { code: "RATE_LIMITED", message: "Too many prediction history requests. Try again later." } });
-    },
+    handler: rateLimitHandler("Too many prediction history requests. Try again later."),
     keyGenerator: predictionRateLimitKey,
     legacyHeaders: false,
     max: 120,
@@ -259,12 +204,18 @@ export const createApp = () => {
     windowMs: 60 * 1000,
   });
   const organizerReadyQuestionsRateLimit = rateLimit({
-    handler: (_request, response) => {
-      response.status(429).json({ error: { code: "RATE_LIMITED", message: "Too many organizer question requests. Try again later." } });
-    },
+    handler: rateLimitHandler("Too many organizer question requests. Try again later."),
     keyGenerator: predictionRateLimitKey,
     legacyHeaders: false,
     max: 60,
+    standardHeaders: true,
+    windowMs: 60 * 1000,
+  });
+  const privateApiRateLimit = rateLimit({
+    handler: rateLimitHandler("Too many private API requests. Try again later."),
+    keyGenerator: predictionRateLimitKey,
+    legacyHeaders: false,
+    max: 120,
     standardHeaders: true,
     windowMs: 60 * 1000,
   });
@@ -279,7 +230,7 @@ export const createApp = () => {
     }));
   });
 
-  app.get("/api/v1/public/health", (_request, response) => {
+  app.get("/api/v1/public/health", publicQuestionDetailRateLimit, (_request, response) => {
     response.json(healthResponseSchema.parse({
       status: "ok",
       service: "forecasthub-api",
@@ -316,7 +267,7 @@ export const createApp = () => {
     }
   });
 
-  app.get("/api/v1/public/categories", async (_request, response, next) => {
+  app.get("/api/v1/public/categories", publicQuestionDetailRateLimit, async (_request, response, next) => {
     try {
       response.json({ categories: await listCategories() });
     } catch (error) {
@@ -367,7 +318,7 @@ export const createApp = () => {
     response.status(204).send();
   });
 
-  app.get("/api/v1/private/me", authSessionRateLimit, requireAuth, async (request: AuthenticatedRequest, response, next) => {
+  app.get("/api/v1/private/me", requireAuth, privateApiRateLimit, async (request: AuthenticatedRequest, response, next) => {
     try {
       if (!request.auth) {
         response.status(401).json({ error: { code: "UNAUTHENTICATED", message: "Authentication is required." } });
@@ -392,7 +343,7 @@ export const createApp = () => {
     }
   });
 
-  app.get("/api/v1/private/predictions", authSessionRateLimit, requireAuth, async (request: AuthenticatedRequest, response, next) => {
+  app.get("/api/v1/private/predictions", requireAuth, privateApiRateLimit, async (request: AuthenticatedRequest, response, next) => {
     try {
       await getMyPredictionHistory(request, response);
     } catch (error) {
@@ -400,7 +351,7 @@ export const createApp = () => {
     }
   });
 
-  app.get("/api/v1/private/organizer/questions", requireAuth, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
+  app.get("/api/v1/private/organizer/questions", requireAuth, privateApiRateLimit, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
     try {
       response.json({ questions: await listOrganizerQuestions(request.auth!.userId) });
     } catch (error) {
@@ -416,7 +367,7 @@ export const createApp = () => {
     }
   });
 
-  app.post("/api/v1/private/organizer/questions/:questionId/resolve", requireAuth, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
+  app.post("/api/v1/private/organizer/questions/:questionId/resolve", requireAuth, privateApiRateLimit, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
     const parsed = resolveAbQuestionRequestSchema.safeParse(request.body);
     if (!parsed.success) {
       response.status(400).json({ error: { code: "INVALID_INPUT", message: parsed.error.issues.map((issue) => issue.message).join(" ") } });
@@ -434,7 +385,7 @@ export const createApp = () => {
     }
   });
 
-  app.post("/api/v1/private/organizer/questions", requireAuth, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
+  app.post("/api/v1/private/organizer/questions", requireAuth, privateApiRateLimit, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
     const parsed = abQuestionRequestSchema.safeParse(request.body);
     if (!parsed.success) {
       const message = parsed.error.issues.map((issue) => issue.message).join(" ");
@@ -457,7 +408,7 @@ export const createApp = () => {
     }
   });
 
-  app.patch("/api/v1/private/organizer/questions/:questionId", requireAuth, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
+  app.patch("/api/v1/private/organizer/questions/:questionId", requireAuth, privateApiRateLimit, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
     const parsed = abQuestionRequestSchema.safeParse(request.body);
     if (!parsed.success) {
       const message = parsed.error.issues.map((issue) => issue.message).join(" ");
@@ -480,7 +431,7 @@ export const createApp = () => {
     }
   });
 
-  app.post("/api/v1/private/organizer/questions/:questionId/publish", requireAuth, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
+  app.post("/api/v1/private/organizer/questions/:questionId/publish", requireAuth, privateApiRateLimit, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
     try {
       const question = await publishOrganizerQuestion(request.auth!.userId, String(request.params.questionId));
       response.json({ question });
@@ -493,7 +444,7 @@ export const createApp = () => {
     }
   });
 
-  app.post("/api/v1/private/organizer/questions/:questionId/finalize", requireAuth, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
+  app.post("/api/v1/private/organizer/questions/:questionId/finalize", requireAuth, privateApiRateLimit, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
     try {
       const question = await finalizeOrganizerQuestion(request.auth!.userId, String(request.params.questionId));
       response.json({ question });
@@ -522,7 +473,7 @@ export const createApp = () => {
     }
   });
 
-  app.get("/api/v1/private/admin/users", requireAuth, requireAdministrator, async (_request, response, next) => {
+  app.get("/api/v1/private/admin/users", requireAuth, privateApiRateLimit, requireAdministrator, async (_request, response, next) => {
     try {
       const page = Number(_request.query.page) || 1;
       const search = typeof _request.query.search === "string" ? _request.query.search.trim().slice(0, 100) : "";
@@ -532,7 +483,7 @@ export const createApp = () => {
     }
   });
 
-  app.get("/api/v1/private/admin/questions", requireAuth, requireAdministrator, async (_request, response, next) => {
+  app.get("/api/v1/private/admin/questions", requireAuth, privateApiRateLimit, requireAdministrator, async (_request, response, next) => {
     try {
       const page = Number(_request.query.page) || 1;
       const search = typeof _request.query.search === "string" ? _request.query.search.trim().slice(0, 100) : "";
@@ -542,7 +493,7 @@ export const createApp = () => {
     }
   });
 
-  app.get("/api/v1/private/admin/history", requireAuth, requireAdministrator, async (request, response, next) => {
+  app.get("/api/v1/private/admin/history", requireAuth, privateApiRateLimit, requireAdministrator, async (request, response, next) => {
     try {
       const page = Number(request.query.page) || 1;
       response.json(await listAdministratorHistory(page));
@@ -551,7 +502,7 @@ export const createApp = () => {
     }
   });
 
-  app.patch("/api/v1/private/admin/users/:userId/role", requireAuth, requireAdministrator, async (request: AuthenticatedRequest, response, next) => {
+  app.patch("/api/v1/private/admin/users/:userId/role", requireAuth, privateApiRateLimit, requireAdministrator, async (request: AuthenticatedRequest, response, next) => {
     const parsed = roleChangeRequestSchema.safeParse(request.body);
     if (!parsed.success || !request.auth) {
       response.status(400).json({ error: { code: "INVALID_INPUT", message: "Role and reason are invalid." } });
@@ -570,7 +521,7 @@ export const createApp = () => {
     }
   });
 
-  app.post("/api/v1/private/admin/questions/:questionId/cancel", requireAuth, requireAdministrator, async (request: AuthenticatedRequest, response, next) => {
+  app.post("/api/v1/private/admin/questions/:questionId/cancel", requireAuth, privateApiRateLimit, requireAdministrator, async (request: AuthenticatedRequest, response, next) => {
     const parsed = questionCancellationRequestSchema.safeParse(request.body);
     if (!parsed.success || !request.auth) {
       response.status(400).json({ error: { code: "INVALID_INPUT", message: "A cancellation reason is required." } });
