@@ -136,6 +136,18 @@ and a timestamp displayed in Pacific Time, plus pending, won, lost, or
 refunded settlement status. It never exposes
 another user's predictions.
 
+Public question pages also support WebSocket price updates:
+
+```text
+WS    /api/v1/public/questions/:questionId/stream
+```
+
+Messages contain the question ID, market version, aggregate A/B prices, and
+credits spent by answer. They never include user identity or private balance
+data. The browser reconnects and reloads the latest question data after a
+disconnect. Private balance, payout, notice updates, and crowd history charts
+are intentionally out of scope.
+
 User and question lists are paginated and searchable so the UI does not load
 all records at once. Administrators can use the history endpoint to review
 immutable role-change, cancellation, and refund records. Role changes require a

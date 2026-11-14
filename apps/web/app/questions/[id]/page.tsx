@@ -6,6 +6,7 @@ import {
   apiErrorSchema,
   myQuestionPredictionsResponseSchema,
   predictionPreviewResponseSchema,
+  publicQuestionPriceUpdateSchema,
   questionDetailResponseSchema,
   type MyQuestionPredictionsResponse,
   type PlacePredictionRequest,
@@ -94,6 +95,7 @@ export default function QuestionDetailPage() {
   const [submitting, setSubmitting] = useState(false);
   const [pending, setPending] = useState<PlacePredictionRequest | null>(null);
   const [serverClosed, setServerClosed] = useState(false);
+  const [liveStatus, setLiveStatus] = useState<"Live" | "Reconnecting…">("Live");
   const [now, setNow] = useState(() => Date.now());
   const submittingRef = useRef(false);
 
@@ -138,6 +140,60 @@ export default function QuestionDetailPage() {
     });
     return () => { active = false; };
   }, [questionPath, predictionsPath]);
+
+  useEffect(() => {
+    if (!question || typeof WebSocket === "undefined") return;
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+    const streamUrl = `${apiUrl.replace(/^http/, "ws")}/api/v1/public/questions/${encodeURIComponent(id)}/stream`;
+    let active = true;
+    let socket: WebSocket | null = null;
+    let retryTimer: number | undefined;
+    let retryDelay = 1000;
+    const connect = () => {
+      if (!active) return;
+      socket = new WebSocket(streamUrl);
+      socket.onopen = () => {
+        retryDelay = 1000;
+        setLiveStatus("Live");
+      };
+      socket.onmessage = (event) => {
+        try {
+          const update = publicQuestionPriceUpdateSchema.parse(JSON.parse(event.data));
+          setQuestion((current) => current && current.id === update.questionId ? {
+            ...current,
+            totalCreditsSpent: update.totalCreditsSpent,
+            answers: current.answers.map((answer) => {
+              const next = update.answers.find((candidate) => candidate.id === answer.id);
+              return next ? { ...answer, price: next.price, creditsSpent: next.creditsSpent } : answer;
+            }),
+          } : current);
+        } catch {
+          setLiveStatus("Reconnecting…");
+        }
+      };
+      socket.onclose = () => {
+        if (!active) return;
+        setLiveStatus("Reconnecting…");
+        retryTimer = window.setTimeout(() => {
+          void requestJson(questionPath)
+            .then((value) => questionDetailResponseSchema.parse(value))
+            .then((latest) => { if (active) setQuestion(latest); })
+            .catch(() => undefined)
+            .finally(() => {
+              if (active) connect();
+            });
+        }, retryDelay);
+        retryDelay = Math.min(retryDelay * 2, 5000);
+      };
+      socket.onerror = () => socket?.close();
+    };
+    connect();
+    return () => {
+      active = false;
+      if (retryTimer !== undefined) window.clearTimeout(retryTimer);
+      socket?.close();
+    };
+  }, [id, question?.id, questionPath]);
 
   useEffect(() => {
     if (!question) return;
@@ -268,14 +324,13 @@ export default function QuestionDetailPage() {
     });
   }
 
-  async function finishAuthentication() {
+  async function finishAuthentication(authenticatedUser?: AuthUser) {
     try {
       setPrivateError("");
       setPageError("");
-      const currentUser = await getCurrentUser();
-      setUser(currentUser);
+      setUser(authenticatedUser ?? await getCurrentUser());
       setAuthView(false);
-      if (currentUser) {
+      if (authenticatedUser) {
         const value = await requestJson(predictionsPath);
         setPredictions(myQuestionPredictionsResponseSchema.parse(value).predictions);
       }
@@ -370,6 +425,7 @@ export default function QuestionDetailPage() {
               </div>
               <aside className="panel prediction-panel">
                 <h2>Make a prediction</h2>
+                <span className="live" aria-live="polite"><i /> {liveStatus}</span>
                 {user && <p className="balance">Balance: {creditsText(user.balance)} credits</p>}
                 {closed ? (
                   <>
