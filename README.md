@@ -189,8 +189,8 @@ The Organizer workspace is divided into three tabs:
 
 - **My Questions** lists questions created by the signed-in Organizer.
 - **Edit Drafts** contains the new-draft form and editable draft questions.
-- **Resolve** lists eligible questions after their deadlines and provides the
-  answer selector and evidence-note form for resolution.
+- **Resolve** lists eligible questions after both their deadline and event time
+  have passed and provides the answer selector and evidence-note form.
 
 The public Arena loads `GET /api/v1/public/questions`. By default it returns
 visible, published A/B questions that are open and not past their deadline,
@@ -209,8 +209,9 @@ GET  /api/v1/private/organizer/questions/ready-to-resolve
 POST /api/v1/private/organizer/questions/:questionId/resolve
 ```
 
-Resolution requires an answer and evidence note. The server locks the question,
-marks it resolved, pays each winning prediction `shares × 100` credits, and
+Resolution requires an answer, an evidence note, and both the deadline and event
+time to have passed. The server locks the question, marks it resolved, pays each
+winning prediction `shares × 100` credits, and
 writes payout ledger entries in the same transaction. Questions with no winning
 predictions refund their original charges. A question cannot be resolved twice.
 

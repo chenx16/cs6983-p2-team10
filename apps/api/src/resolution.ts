@@ -12,13 +12,15 @@ export class ResolutionError extends Error {
   }
 }
 
-export const listReadyToResolve = (organizerId: string) =>
-  prisma.question.findMany({
+export const listReadyToResolve = (organizerId: string) => {
+  const now = new Date();
+  return prisma.question.findMany({
     where: {
       organizerId,
       type: QuestionType.AB,
       status: { in: [QuestionStatus.OPEN, QuestionStatus.CLOSED], not: QuestionStatus.RESOLVED },
-      deadline: { lte: new Date() },
+      deadline: { lte: now },
+      eventTime: { lte: now },
     },
     orderBy: { deadline: "asc" },
     include: {
@@ -26,6 +28,7 @@ export const listReadyToResolve = (organizerId: string) =>
       answers: { orderBy: { sortOrder: "asc" }, select: { id: true, text: true } },
     },
   });
+};
 
 export const resolveAbQuestion = (
   organizerId: string,
@@ -44,8 +47,12 @@ export const resolveAbQuestion = (
   if (question.status === QuestionStatus.RESOLVED) {
     throw new ResolutionError("INVALID_ACTION", "The question has already been resolved.");
   }
-  if (question.deadline > new Date()) {
+  const now = new Date();
+  if (question.deadline > now) {
     throw new ResolutionError("INVALID_ACTION", "A question can only be resolved after its deadline.");
+  }
+  if (question.eventTime > now) {
+    throw new ResolutionError("INVALID_ACTION", "A question can only be resolved after its event time.");
   }
   if (!question.answers.some((answer) => answer.id === input.answerId)) {
     throw new ResolutionError("INVALID_ANSWER", "The selected answer does not belong to this question.");
