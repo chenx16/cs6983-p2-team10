@@ -48,16 +48,20 @@ export const calculateLeaderboard = (
     byUser.set(userId, user);
   }
 
-  const entries = [...byUser.values()].map((user) => ({
-    rank: null as number | null,
-    username: user.username,
-    scoredQuestions: user.scoredQuestions,
-    successRate: Math.round((user.correctQuestions / user.scoredQuestions) * 100),
-  }));
+  const entries = [...byUser.values()].map((user) => {
+    const unroundedSuccessRate = user.correctQuestions / user.scoredQuestions;
+    return {
+      rank: null as number | null,
+      username: user.username,
+      scoredQuestions: user.scoredQuestions,
+      successRate: Math.round(unroundedSuccessRate * 100),
+      unroundedSuccessRate,
+    };
+  });
   const ranked = entries
     .filter((entry) => entry.scoredQuestions >= 5)
     .sort((left, right) =>
-      right.successRate - left.successRate ||
+      right.unroundedSuccessRate - left.unroundedSuccessRate ||
       right.scoredQuestions - left.scoredQuestions ||
       left.username.localeCompare(right.username),
     );
@@ -66,7 +70,7 @@ export const calculateLeaderboard = (
   ranked.forEach((entry, index) => {
     if (
       !previous ||
-      previous.successRate !== entry.successRate ||
+      previous.unroundedSuccessRate !== entry.unroundedSuccessRate ||
       previous.scoredQuestions !== entry.scoredQuestions
     ) {
       previousRank = index + 1;
@@ -78,7 +82,12 @@ export const calculateLeaderboard = (
   const unranked = entries
     .filter((entry) => entry.scoredQuestions < 5)
     .sort((left, right) => left.username.localeCompare(right.username));
-  return [...ranked, ...unranked];
+  return [...ranked, ...unranked].map(({ rank, username, scoredQuestions, successRate }) => ({
+    rank,
+    username,
+    scoredQuestions,
+    successRate,
+  }));
 };
 
 export const getPublicLeaderboard = async (): Promise<LeaderboardResponse> => {
