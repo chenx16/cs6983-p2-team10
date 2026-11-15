@@ -184,8 +184,8 @@ Each PR records the test and fix commits.
 [AGENTS.md](AGENTS.md) gives contributors and coding agents shared context:
 product constraints, server-side accounting and authorization rules, testing,
 and Git workflow. The team refines these instructions when experience reveals
-missing or unclear guidance. The [context engineering reflection](docs/REFLECTION.md)
-describes the before/after comparison and resulting rules.
+missing or unclear guidance. The HW3 context engineering reflection in
+[docs](docs/) describes the before/after comparison and resulting rules.
 
 For AI-assisted TDD, the intended workflow is to review the requirements,
 have the assistant write a focused failing test, inspect and confirm the test,
