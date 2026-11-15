@@ -99,4 +99,13 @@ describe("OpenAPI documentation served by Swagger", () => {
     expect(Object.keys(document.paths[path]?.post?.responses ?? {}))
       .toEqual(expect.arrayContaining(["200", "201", "401", "404", "409", "422", "429"]));
   });
+
+  it("documents rate limits for organizer and administrator operations", () => {
+    for (const [path, method] of routes.filter(([path]) =>
+      path.startsWith("/api/v1/private/organizer/") || path.startsWith("/api/v1/private/admin/")
+    )) {
+      expect.soft(document.paths[path]?.[method]?.responses["429"], `${method.toUpperCase()} ${path}`)
+        .toBeDefined();
+    }
+  });
 });
