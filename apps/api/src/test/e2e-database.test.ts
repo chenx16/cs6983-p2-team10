@@ -13,6 +13,7 @@ describe("E2E database safety", () => {
     "postgresql://test:test@localhost:5432/forecasthub",
     "postgresql://test:test@localhost:5432/forecasthub_test",
     "postgresql://test:test@postgres:5432/forecasthub_e2e_test",
+    "https://localhost/forecasthub_e2e_test",
     "postgresql://test:test@localhost:5432/forecasthub_e2e_test?host=production.example.com",
     "postgresql://test:test@localhost:5432/forecasthub_e2e_test?schema=other",
   ])("rejects unsafe database URL %s", (url) => {
