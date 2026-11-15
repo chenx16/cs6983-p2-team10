@@ -68,7 +68,10 @@ The API starts on `http://localhost:4000`. The web app starts on
 `http://localhost:3000`. The web app forwards `/api/*` requests to the API
 using `API_URL`, which defaults to `http://localhost:4000` for local
 development. OpenAPI documentation is available at
-`http://localhost:4000/api/docs`.
+`http://localhost:4000/api/docs`. It describes the public, authentication,
+private, organizer, and administrator HTTP routes, plus the public WebSocket
+stream. Private routes use the `access_token` cookie; organizer and
+administrator actions also require the appropriate role.
 
 The API currently requires a `JWT_SECRET` of at least 32 characters. The example environment file contains a local development value; use a separately generated secret outside local development.
 
