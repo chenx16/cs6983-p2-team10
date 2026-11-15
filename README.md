@@ -126,6 +126,37 @@ name ends in `_test`. Tests clear the test database; do not use a shared or
 persistent database. Skip `createdb` if the dedicated test database already
 exists.
 
+### Browser E2E test
+
+The Playwright test covers registration, browsing a seeded question, previewing
+and placing a prediction, the balance change, and prediction history. It
+**clears all tables** in its dedicated `forecasthub_e2e_test` database before
+every run. Never point it at a shared database. The guard accepts only a local
+PostgreSQL URL with that exact database name; `DATABASE_URL` is not a fallback.
+Use a separate checkout if a Next.js development server is running, because
+the test builds the web app and replaces that checkout's `.next` output.
+
+For example, with Docker running and port 55432 free:
+
+```bash
+docker run --name forecasthub-e2e --rm -d -p 127.0.0.1:55432:5432 \
+  -e POSTGRES_DB=forecasthub_e2e_test -e POSTGRES_USER=e2e \
+  -e POSTGRES_PASSWORD=e2e postgres:17-alpine
+export E2E_DATABASE_URL='postgresql://e2e:e2e@127.0.0.1:55432/forecasthub_e2e_test?schema=public'
+DATABASE_URL="$E2E_DATABASE_URL" npm run db:generate
+DATABASE_URL="$E2E_DATABASE_URL" npm exec --workspace=@forecasthub/api -- prisma migrate deploy
+npm run build --workspace=@forecasthub/api
+npx playwright install chromium
+npm run test:e2e
+docker stop forecasthub-e2e
+unset E2E_DATABASE_URL
+```
+
+Wait for PostgreSQL to be ready before running migrations. The test starts its
+own API and web servers on ports 43017 and 43018 and refuses to reuse running
+servers. CI runs it against a separate PostgreSQL service and uploads failure
+screenshots and traces.
+
 Database commands:
 
 ```bash
