@@ -4,6 +4,19 @@
 
 ForecastHub is a community prediction platform based on the requirements in [docs/PRD.md](docs/PRD.md). Credits are virtual only. The repository is being built as a TypeScript npm workspace with separate web and API applications.
 
+## Project links
+
+- [Production app](https://cs6983-p2-team10.vercel.app/)
+- [Production API documentation](https://cs6983-p2-team10-api.onrender.com/api/docs/)
+- [Demo video (link to be added)](#demo-video)
+- [Architecture and CI/CD diagrams](docs/ARCHITECTURE.md)
+- [Database schema](docs/SCHEMA.md)
+- [Partner contributions](docs/CONTRIBUTIONS.md)
+
+## Demo video
+
+The demo video link has not been added yet.
+
 ## Current status
 
 The current release includes:
@@ -33,7 +46,7 @@ documented in [issue #32](https://github.com/chenx16/cs6983-p2-team10/issues/32)
 
 ## Prerequisites
 
-- Node.js 20 or newer
+- Node.js 22.x
 - npm 10 or newer (npm 6 does not support npm workspaces)
 - Docker Desktop, for local PostgreSQL
 
@@ -47,9 +60,9 @@ npm --version
 With `nvm`, the setup is:
 
 ```bash
-nvm install 20
-nvm use 20
-npm install --global npm@10
+nvm install 22
+nvm use 22
+npm --version
 ```
 
 ## Local development
@@ -101,13 +114,17 @@ file from the safe local template, then apply the existing Prisma migrations:
 
 ```bash
 cp apps/api/.env.test.example apps/api/.env.test
+# If it does not already exist, create a separate, disposable test database:
+docker compose exec postgres createdb -U forecasthub forecasthub_test
 set -a && source apps/api/.env.test && set +a
 DATABASE_URL="$DATABASE_URL_TEST" npm exec --workspace=@forecasthub/api -- prisma migrate deploy
 ```
 
 The development database is not used or cleared by tests. Test cleanup refuses
 to run unless the configured database is local/CI test infrastructure and its
-name ends in `_test`.
+name ends in `_test`. Tests clear the test database; do not use a shared or
+persistent database. Skip `createdb` if the dedicated test database already
+exists.
 
 Database commands:
 
