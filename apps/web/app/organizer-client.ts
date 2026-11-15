@@ -23,6 +23,7 @@ const request = async <T extends object>(path: string, init?: RequestInit): Prom
 };
 
 export const getCategories = () => request<{ categories: OrganizerCategory[] }>("/api/v1/public/categories");
+export const createCategory = (name: string) => request<{ category: OrganizerCategory }>("/api/v1/private/organizer/categories", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }) });
 export const getOrganizerQuestions = () => request<{ questions: OrganizerQuestion[] }>("/api/v1/private/organizer/questions");
 export const createQuestion = (input: object) => request<{ question: OrganizerQuestion }>("/api/v1/private/organizer/questions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) });
 export const updateQuestion = (id: string, input: object) => request<{ question: OrganizerQuestion }>(`/api/v1/private/organizer/questions/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) });

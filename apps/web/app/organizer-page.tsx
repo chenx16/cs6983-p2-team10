@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import type { AuthUser } from "./auth-client";
-import { createQuestion, finalizeQuestion, getCategories, getOrganizerQuestions, getReadyToResolve, publishQuestion, resolveQuestion, type OrganizerCategory, type OrganizerQuestion, type ReadyQuestion, updateQuestion } from "./organizer-client";
+import { createCategory, createQuestion, finalizeQuestion, getCategories, getOrganizerQuestions, getReadyToResolve, publishQuestion, resolveQuestion, type OrganizerCategory, type OrganizerQuestion, type ReadyQuestion, updateQuestion } from "./organizer-client";
 
 const initialForm = { title: "", categoryId: "", answerA: "", answerB: "", startingPriceA: 50, deadline: "", eventTime: "", outcomeCriteria: "", source: "" };
 type FormState = typeof initialForm;
@@ -26,6 +26,7 @@ export function OrganizerPage({ user }: { user: AuthUser | null }) {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [newCategory, setNewCategory] = useState("");
   const canOrganize = user?.role === "ORGANIZER" || user?.role === "ADMINISTRATOR";
 
   const load = async () => {
@@ -46,6 +47,18 @@ export function OrganizerPage({ user }: { user: AuthUser | null }) {
   if (loading) return <p role="status">Loading organizer tools…</p>;
 
   const change = (field: keyof FormState, value: string | number) => setForm((current) => ({ ...current, [field]: value }));
+  const addCategory = async () => {
+    setError(""); setMessage("");
+    try {
+      const result = await createCategory(newCategory);
+      setCategories((current) => [...current, result.category].sort((a, b) => a.name.localeCompare(b.name)));
+      setForm((current) => ({ ...current, categoryId: result.category.id }));
+      setNewCategory("");
+      setMessage("Category created.");
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Unable to create category.");
+    }
+  };
   const submit = async (event: React.FormEvent) => {
     event.preventDefault(); setError(""); setMessage("");
     const deadline = new Date(form.deadline);
@@ -111,6 +124,7 @@ export function OrganizerPage({ user }: { user: AuthUser | null }) {
       <form className="panel organizer-form" onSubmit={(event) => void submit(event)}><div className="panel-heading"><div><p className="eyebrow">Question setup</p><h2>{editing ? "Edit draft" : "New draft"}</h2></div></div>
         <label>Question title<input required maxLength={200} onChange={(event) => change("title", event.target.value)} value={form.title} /></label>
         <label>Category<select required onChange={(event) => change("categoryId", event.target.value)} value={form.categoryId}><option value="">Choose category</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>
+        <div className="form-actions"><label>New category<input maxLength={100} onChange={(event) => setNewCategory(event.target.value)} placeholder="Category name" value={newCategory} /></label><button className="button" disabled={!newCategory.trim()} onClick={() => void addCategory()} type="button">Add category</button></div>
         <div className="form-two"><label>Answer A<input required maxLength={40} onChange={(event) => change("answerA", event.target.value)} value={form.answerA} /></label><label>Answer B<input required maxLength={40} onChange={(event) => change("answerB", event.target.value)} value={form.answerB} /></label></div>
         <label>Starting price for A: {form.startingPriceA}<input max={90} min={10} onChange={(event) => change("startingPriceA", Number(event.target.value))} type="range" value={form.startingPriceA} /></label>
         <div className="form-two"><label>Deadline (Pacific Time)<input aria-describedby="deadline-help" required max={form.eventTime || undefined} min={localDateTimeValue(new Date())} onChange={(event) => change("deadline", event.target.value)} type="datetime-local" value={form.deadline} /><span className="field-help" id="deadline-help">Choose when predictions close.</span></label><label>Event time (Pacific Time)<input required min={form.deadline || localDateTimeValue(new Date())} onChange={(event) => change("eventTime", event.target.value)} type="datetime-local" value={form.eventTime} /></label></div>
