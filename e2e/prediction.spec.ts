@@ -54,7 +54,7 @@ test("an organizer can create an A/B question draft", async ({ page }) => {
   const deadline = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16);
   const eventTime = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString().slice(0, 16);
   await page.getByLabel("Question title").fill(title);
-  await page.getByLabel("Category").selectOption({ label: "E2E Sports" });
+  await page.getByRole("combobox", { name: "Category" }).selectOption({ label: "E2E Sports" });
   await page.getByLabel("Answer A").fill("Yes");
   await page.getByLabel("Answer B").fill("No");
   await page.getByLabel("Deadline (Pacific Time)").fill(deadline);
@@ -64,7 +64,8 @@ test("an organizer can create an A/B question draft", async ({ page }) => {
   await page.getByRole("button", { name: "Save draft" }).click();
 
   await expect(page.getByRole("status")).toContainText("Draft saved.");
-  await expect(page.getByText(title, { exact: true })).toBeVisible();
+  await page.getByRole("tab", { name: "My Questions" }).click();
+  await expect(page.locator("article").filter({ hasText: title })).toBeVisible();
 });
 
 test("an organizer can resolve a question and the result appears on the leaderboard", async ({ page }) => {
