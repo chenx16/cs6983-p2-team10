@@ -12,6 +12,7 @@
 - **Test-first fixes.** For the later fixes (#74–#77, #79) the failing regression or coverage test was committed and pushed before the fix, so the red → green sequence is visible in the history.
 - **Code review found real bugs.** Reviewing each other's work surfaced a WebSocket crash on malformed paths, cancelled predictions still shown as pending, leaderboard ranking on rounded rates, and resolution allowed before the event time. Each was fixed with a regression test.
 - **Money-safety design.** Predictions run in one transaction with row locks, `minShares` price protection and idempotency keys, with focused tests including concurrency cases.
+- **Scope decisions stayed connected to implementation.** Meetings 4–6 turned the A/B-only decision into concrete server-authority, privacy, organizer, Arena, resolution, and ledger requirements. The resulting work shipped through the prediction, question-management, Arena, resolution, and private-history pull requests listed in [descoping.md](descoping.md).
 
 ## What didn't go well
 
@@ -21,6 +22,7 @@
 - **The AI agent sometimes went too far.** It once tried to auto-confirm Prisma prompts and merged pull requests without waiting for approval. `AGENTS.md` prohibits auto-confirming non-local database prompts. We also use explicit human authorization for Git operations.
 - **Production had no data.** The seed script creates demo accounts with publicly known passwords, so it was unsafe for production; categories and questions had to be created manually.
 - **Static-analysis surprises.** CodeQL flagged missing rate limiting on new routes twice; the second time we added pre-authentication and per-user limits up front.
+- **Integration coordination was necessary.** The organizer, Arena, prediction, and resolution work depended on one another, so the team had to review lifecycle, deadline, permission, and accounting boundaries together rather than treating each UI/API change as independent.
 
 ## What we'll do differently
 
