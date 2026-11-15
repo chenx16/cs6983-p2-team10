@@ -251,7 +251,7 @@ export const createApp = () => {
     }
   });
 
-  app.get("/api/v1/private/organizer/questions", requireAuth, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
+  app.get("/api/v1/private/organizer/questions", authSessionRateLimit, requireAuth, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
     try {
       response.json({ questions: await listOrganizerQuestions(request.auth!.userId) });
     } catch (error) {
@@ -267,7 +267,7 @@ export const createApp = () => {
     }
   });
 
-  app.post("/api/v1/private/organizer/questions/:questionId/resolve", requireAuth, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
+  app.post("/api/v1/private/organizer/questions/:questionId/resolve", authSessionRateLimit, requireAuth, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
     const parsed = resolveAbQuestionRequestSchema.safeParse(request.body);
     if (!parsed.success) {
       response.status(400).json({ error: { code: "INVALID_INPUT", message: parsed.error.issues.map((issue) => issue.message).join(" ") } });
@@ -285,7 +285,7 @@ export const createApp = () => {
     }
   });
 
-  app.post("/api/v1/private/organizer/questions", requireAuth, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
+  app.post("/api/v1/private/organizer/questions", authSessionRateLimit, requireAuth, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
     const parsed = abQuestionRequestSchema.safeParse(request.body);
     if (!parsed.success) {
       const message = parsed.error.issues.map((issue) => issue.message).join(" ");
@@ -308,7 +308,7 @@ export const createApp = () => {
     }
   });
 
-  app.patch("/api/v1/private/organizer/questions/:questionId", requireAuth, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
+  app.patch("/api/v1/private/organizer/questions/:questionId", authSessionRateLimit, requireAuth, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
     const parsed = abQuestionRequestSchema.safeParse(request.body);
     if (!parsed.success) {
       const message = parsed.error.issues.map((issue) => issue.message).join(" ");
@@ -331,7 +331,7 @@ export const createApp = () => {
     }
   });
 
-  app.post("/api/v1/private/organizer/questions/:questionId/publish", requireAuth, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
+  app.post("/api/v1/private/organizer/questions/:questionId/publish", authSessionRateLimit, requireAuth, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
     try {
       const question = await publishOrganizerQuestion(request.auth!.userId, String(request.params.questionId));
       response.json({ question });
@@ -344,7 +344,7 @@ export const createApp = () => {
     }
   });
 
-  app.post("/api/v1/private/organizer/questions/:questionId/finalize", requireAuth, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
+  app.post("/api/v1/private/organizer/questions/:questionId/finalize", authSessionRateLimit, requireAuth, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
     try {
       const question = await finalizeOrganizerQuestion(request.auth!.userId, String(request.params.questionId));
       response.json({ question });
@@ -373,7 +373,7 @@ export const createApp = () => {
     }
   });
 
-  app.get("/api/v1/private/admin/users", requireAuth, requireAdministrator, async (_request, response, next) => {
+  app.get("/api/v1/private/admin/users", authSessionRateLimit, requireAuth, requireAdministrator, async (_request, response, next) => {
     try {
       const page = Number(_request.query.page) || 1;
       const search = typeof _request.query.search === "string" ? _request.query.search.trim().slice(0, 100) : "";
@@ -383,7 +383,7 @@ export const createApp = () => {
     }
   });
 
-  app.get("/api/v1/private/admin/questions", requireAuth, requireAdministrator, async (_request, response, next) => {
+  app.get("/api/v1/private/admin/questions", authSessionRateLimit, requireAuth, requireAdministrator, async (_request, response, next) => {
     try {
       const page = Number(_request.query.page) || 1;
       const search = typeof _request.query.search === "string" ? _request.query.search.trim().slice(0, 100) : "";
@@ -393,7 +393,7 @@ export const createApp = () => {
     }
   });
 
-  app.get("/api/v1/private/admin/history", requireAuth, requireAdministrator, async (request, response, next) => {
+  app.get("/api/v1/private/admin/history", authSessionRateLimit, requireAuth, requireAdministrator, async (request, response, next) => {
     try {
       const page = Number(request.query.page) || 1;
       response.json(await listAdministratorHistory(page));
@@ -402,7 +402,7 @@ export const createApp = () => {
     }
   });
 
-  app.patch("/api/v1/private/admin/users/:userId/role", requireAuth, requireAdministrator, async (request: AuthenticatedRequest, response, next) => {
+  app.patch("/api/v1/private/admin/users/:userId/role", authSessionRateLimit, requireAuth, requireAdministrator, async (request: AuthenticatedRequest, response, next) => {
     const parsed = roleChangeRequestSchema.safeParse(request.body);
     if (!parsed.success || !request.auth) {
       response.status(400).json({ error: { code: "INVALID_INPUT", message: "Role and reason are invalid." } });
@@ -421,7 +421,7 @@ export const createApp = () => {
     }
   });
 
-  app.post("/api/v1/private/admin/questions/:questionId/cancel", requireAuth, requireAdministrator, async (request: AuthenticatedRequest, response, next) => {
+  app.post("/api/v1/private/admin/questions/:questionId/cancel", authSessionRateLimit, requireAuth, requireAdministrator, async (request: AuthenticatedRequest, response, next) => {
     const parsed = questionCancellationRequestSchema.safeParse(request.body);
     if (!parsed.success || !request.auth) {
       response.status(400).json({ error: { code: "INVALID_INPUT", message: "A cancellation reason is required." } });
