@@ -41,4 +41,5 @@
 
 **Qiong → Xinlai**
 
-> TODO — Qiong writes this section in their own words (what went well, what to improve).
+- *What went well:* Xinlai was consistently positive, proactive, and dependable throughout the sprint. She made significant contributions to several important areas of the project, including the initial project setup, CI/CD pipeline, deployment process, testing infrastructure, and core user-facing functionality. She demonstrated strong technical skills and a good understanding of how different parts of the system work together. She was also very responsible when handling her assigned tasks and actively communicated with teammates to coordinate work across dependent issues. Her willingness to help others, share progress, and address problems made the development process smoother and helped the team maintain steady progress throughout the sprint.
+- *Looking ahead:* Continue the same proactive collaboration while leaving time near the deadline for final integration checks and production verification. Overall, I look forward to working with Xinlai again and believe her contributions will continue to have a positive impact on the team's efficiency and project quality.

@@ -179,6 +179,7 @@ for the cited activity and may differ from the dates of the Teams messages.
 
 **Qiong**
 
-- Done: Followed up on completed feature work and shared documentation.
+- Done: Consolidated meeting notes
+  [PR #90](https://github.com/chenx16/cs6983-p2-team10/pull/90).
 - Next: Coordinate final review and demo preparation with Xinlai.
 - Blockers: None recorded.
