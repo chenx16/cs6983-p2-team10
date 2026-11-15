@@ -51,6 +51,11 @@ Security scanning and preview deployment remain in scope and are recorded as
 complete in #17 (PRs #31 and #26). The separate preview and production
 environment configuration is also complete and documented.
 
+The table records the November 11 decision. Category creation was subsequently
+added for Organizers and Administrators in
+[PR #88](https://github.com/chenx16/cs6983-p2-team10/pull/88); category
+renaming and removal remain deferred.
+
 ## Retained release flow
 
 1. A visitor registers or signs in and receives a secure authenticated session.
@@ -85,8 +90,18 @@ implementation focused on the complete A/B workflow:
   append-only ledger records, and private prediction history remains scoped to
   the signed-in user.
 
-The corresponding implementation results were delivered through PRs [#50],
-[#52], [#53], [#58], [#60], [#61], [#62], [#64], [#65], [#67], and [#68].
+The corresponding implementation results were delivered through PRs
+[#50](https://github.com/chenx16/cs6983-p2-team10/pull/50),
+[#52](https://github.com/chenx16/cs6983-p2-team10/pull/52),
+[#53](https://github.com/chenx16/cs6983-p2-team10/pull/53),
+[#58](https://github.com/chenx16/cs6983-p2-team10/pull/58),
+[#60](https://github.com/chenx16/cs6983-p2-team10/pull/60),
+[#61](https://github.com/chenx16/cs6983-p2-team10/pull/61),
+[#62](https://github.com/chenx16/cs6983-p2-team10/pull/62),
+[#64](https://github.com/chenx16/cs6983-p2-team10/pull/64),
+[#65](https://github.com/chenx16/cs6983-p2-team10/pull/65),
+[#67](https://github.com/chenx16/cs6983-p2-team10/pull/67), and
+[#68](https://github.com/chenx16/cs6983-p2-team10/pull/68).
 
 ## Future work
 
@@ -96,7 +111,7 @@ The following work remains documented for a later release:
 - Weekly credits and coupon codes
 - Crowd prediction history charts and their text alternatives
 - Private profiles, balance history, and private result history
-- User removal, hiding, correction, and category-management tools
+- User removal, hiding, correction, and category renaming/removal
 - Private WebSocket balance, payout, and notice updates
 - Prisma and Next.js major-version upgrades for the known audit findings
 

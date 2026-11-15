@@ -108,11 +108,30 @@ history and rationale.
 - Private profile pages, balance history, and private per-question results
 - Private WebSocket balance, payout, and notice updates
 - User removal, question hiding, resolution corrections, and category
-  management
+  renaming and removal
 - Prisma and Next.js major-version upgrades for the known audit findings
 
 These are deferred rather than deleted from the PRD; future issues may restore
 them after the course timeline.
+
+### Course-release implementation notes
+
+The original user stories below remain the product vision. The implemented
+release differs in these respects:
+
+- Organizers and Administrators can create categories while drafting a
+  question; renaming and removal are not implemented.
+- Private HTTP requests authenticate with an HttpOnly `access_token` cookie,
+  rather than the Bearer header described in US-8. Current rate limits and
+  their proxy limitations are documented in the [README](../README.md#known-limitations).
+- The current A/B resolution implementation refunds the original charges
+  when there are no winning predictions. This differs from US-5's statement
+  that losing predictions receive no refund; the intended rule needs product
+  confirmation.
+- Playwright covers registration and prediction, category creation and
+  publication, and organizer resolution and leaderboard results as separate
+  journeys. The resolution test uses a seeded participant rather than the
+  newly registered user.
 
 ---
 

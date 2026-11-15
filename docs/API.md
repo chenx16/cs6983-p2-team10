@@ -8,6 +8,7 @@ For local development, visit `http://localhost:4000/api/docs/`.
 
 ```text
 GET /api/v1/public/questions
+GET /api/v1/public/questions/:questionId
 GET /api/v1/public/categories
 GET /api/v1/public/leaderboard
 WS  /api/v1/public/questions/:questionId/stream
@@ -34,6 +35,13 @@ balances. The browser reconnects and reloads question data after a disconnect.
 ## Authenticated workflows
 
 ```text
+POST  /api/v1/auth/register
+POST  /api/v1/auth/login
+POST  /api/v1/auth/logout
+GET   /api/v1/private/me
+POST  /api/v1/private/questions/:questionId/predictions/preview
+POST  /api/v1/private/questions/:questionId/predictions
+GET   /api/v1/private/questions/:questionId/predictions
 GET   /api/v1/private/predictions
 POST  /api/v1/private/organizer/categories
 GET   /api/v1/private/organizer/questions
@@ -53,7 +61,8 @@ POST  /api/v1/private/admin/questions/:questionId/cancel
 Private routes use the `access_token` cookie. A user's
 `GET /api/v1/private/predictions` response contains only their own predictions,
 including the question, selected answer, charge, shares, timestamp, and
-pending, won, lost, or refunded status.
+pending, won, lost, or refunded status. The prediction preview and placement
+routes calculate prices and validate credits on the server.
 
 Organizers and Administrators can use `/organizer` to create and edit owned
 drafts, create categories, publish valid A/B questions, close open questions

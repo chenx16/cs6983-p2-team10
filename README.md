@@ -27,7 +27,7 @@ team privately through Canvas. Do not post credentials in this public repository
 | AI mastery | [AI-assisted development](#ai-assisted-development), [shared rules](AGENTS.md), and [context engineering reflection](docs/reflections/hw3-context-engineering.md) |
 | CI/CD and DevOps | [CI/CD](#cicd), [environment setup](#environments), and [workflow](.github/workflows/ci.yml) |
 | Agile and pair workflow | [Sprint and collaboration records](#agile-and-collaboration) and [contribution log](docs/CONTRIBUTIONS.md) |
-| Documentation | [Architecture and schema](#architecture), [API](#api), sprint records, and [individual reflection](docs/reflections/project-2-xinlai-chen.md) |
+| Documentation | [Architecture and schema](#architecture), [API](#api), sprint records, and [individual reflections](#agile-and-collaboration) |
 
 ## Features
 
@@ -149,8 +149,8 @@ Playwright covers three browser journeys:
 
 1. Register, browse the Arena, preview and place a prediction, and check the
    balance and prediction history.
-2. Sign in as an Organizer, create and publish an A/B draft, and find it in
-   the Arena.
+2. Sign in as an Organizer, create a category, create and publish an A/B
+   question in that category, and find it in the Arena.
 3. Resolve an eligible question and check the seeded participant's updated
    leaderboard result.
 
@@ -266,7 +266,9 @@ deployment hook, subject to the configured production environment and secrets.
   [retrospective](docs/sprints/sprint-2/retrospective.md)
 - [Sprint meeting notes](docs/sprints/)
 - [Partner contributions](docs/CONTRIBUTIONS.md)
-- [Project 2 individual reflection](docs/reflections/project-2-xinlai-chen.md)
+- Project 2 individual reflections:
+  [Xinlai](docs/reflections/project-2-xinlai-chen.md) and
+  [Qiong](docs/reflections/project-2-qiong-wu.md)
 
 Sprint records describe joint planning, decisions, standups, and retrospectives.
 Review feedback was shared when practical, sometimes after merge; the

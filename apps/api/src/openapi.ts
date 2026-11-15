@@ -64,8 +64,8 @@ const placement = {
   balance: 900,
 };
 const privateErrors = { "401": errors.unauthenticated };
-const organizerErrors = { ...privateErrors, "403": errors.forbidden };
-const adminErrors = { ...privateErrors, "403": errors.adminForbidden };
+const organizerErrors = { ...privateErrors, "403": errors.forbidden, "429": errors.rateLimited };
+const adminErrors = { ...privateErrors, "403": errors.adminForbidden, "429": errors.rateLimited };
 const predictionErrors = {
   ...privateErrors, "404": errors.publicNotFound,
   "409": error("QUESTION_NOT_OPEN or QUESTION_CLOSED.", "QUESTION_CLOSED", "The prediction deadline has passed."),
@@ -216,7 +216,7 @@ export const openApiDocument = {
     "/api/v1/private/organizer/questions/ready-to-resolve": {
       get: {
         summary: "List owned questions ready for resolution", description: "Requires organizer or administrator role; both deadline and event time must have passed.", security: cookieSecurity,
-        responses: { "200": jsonResponse("Eligible questions.", { questions: [{ ...questionRecord, status: "CLOSED", publishedAt: "2030-01-01T12:00:00.000Z", category: { name: "Sports" }, answers: organizerQuestion.answers }] }), ...organizerErrors, "429": errors.rateLimited },
+        responses: { "200": jsonResponse("Eligible questions.", { questions: [{ ...questionRecord, status: "CLOSED", publishedAt: "2030-01-01T12:00:00.000Z", category: { name: "Sports" }, answers: organizerQuestion.answers }] }), ...organizerErrors },
       },
     },
     "/api/v1/private/organizer/questions/{questionId}/resolve": {

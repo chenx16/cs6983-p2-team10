@@ -2,10 +2,11 @@
 
 This is a snapshot of GitHub issue assignments, pull request authorship, and
 commit history through the main branch's merge of
-[#79](https://github.com/chenx16/cs6983-p2-team10/pull/79). An assignment is
-not proof that work was completed. Pull request authorship does not imply sole
-authorship of every commit or review. Git commit display names can differ
-from GitHub usernames; PR authorship below uses GitHub's PR author field.
+[#92](https://github.com/chenx16/cs6983-p2-team10/pull/92) on November 15, 2026.
+An assignment is not proof that work was completed. Pull request authorship
+does not imply sole authorship of every commit or review. Git commit display
+names can differ from GitHub usernames; PR authorship below uses GitHub's PR
+author field.
 
 ## Issue assignments
 
@@ -34,8 +35,9 @@ from GitHub usernames; PR authorship below uses GitHub's PR author field.
   [#16](https://github.com/chenx16/cs6983-p2-team10/issues/16),
   [#17](https://github.com/chenx16/cs6983-p2-team10/issues/17),
   [#18](https://github.com/chenx16/cs6983-p2-team10/issues/18),
-  [#57](https://github.com/chenx16/cs6983-p2-team10/issues/57), and
-  [#63](https://github.com/chenx16/cs6983-p2-team10/issues/63).
+  [#57](https://github.com/chenx16/cs6983-p2-team10/issues/57),
+  [#63](https://github.com/chenx16/cs6983-p2-team10/issues/63), and
+  [#87](https://github.com/chenx16/cs6983-p2-team10/issues/87).
 
 Issues [#10](https://github.com/chenx16/cs6983-p2-team10/issues/10) and
 [#14](https://github.com/chenx16/cs6983-p2-team10/issues/14) are outside the
@@ -70,9 +72,13 @@ The following links are PRs rather than issue numbers:
   [#76](https://github.com/chenx16/cs6983-p2-team10/pull/76),
   [#77](https://github.com/chenx16/cs6983-p2-team10/pull/77),
   [#79](https://github.com/chenx16/cs6983-p2-team10/pull/79).
-- [#78](https://github.com/chenx16/cs6983-p2-team10/pull/78) adds Playwright
-  coverage for part of #17; it was open at this snapshot and has since been
-  merged. The HW3 experiments
+- Playwright, final documentation, and authentication limits:
+  [#78](https://github.com/chenx16/cs6983-p2-team10/pull/78),
+  [#80](https://github.com/chenx16/cs6983-p2-team10/pull/80),
+  [#81](https://github.com/chenx16/cs6983-p2-team10/pull/81),
+  [#82](https://github.com/chenx16/cs6983-p2-team10/pull/82), and
+  [#91](https://github.com/chenx16/cs6983-p2-team10/pull/91).
+- The HW3 experiments
   [#19](https://github.com/chenx16/cs6983-p2-team10/pull/19) and
   [#20](https://github.com/chenx16/cs6983-p2-team10/pull/20) were closed without
   merging.
@@ -96,7 +102,37 @@ The following links are PRs rather than issue numbers:
   documentation and rate-limit changes to a feature branch, not main.
   Documentation was subsequently adapted for main in #79; #72's rate-limit
   changes were not carried over.
+- E2E, integration fixes, and category creation:
+  [#84](https://github.com/chenx16/cs6983-p2-team10/pull/84),
+  [#85](https://github.com/chenx16/cs6983-p2-team10/pull/85),
+  [#86](https://github.com/chenx16/cs6983-p2-team10/pull/86),
+  [#88](https://github.com/chenx16/cs6983-p2-team10/pull/88), and
+  [#89](https://github.com/chenx16/cs6983-p2-team10/pull/89). Xinlai also
+  contributed the category-creation E2E changes to #89.
+- Sprint records and individual reflection:
+  [#83](https://github.com/chenx16/cs6983-p2-team10/pull/83),
+  [#90](https://github.com/chenx16/cs6983-p2-team10/pull/90),
+  [#92](https://github.com/chenx16/cs6983-p2-team10/pull/92), and
+  [#93](https://github.com/chenx16/cs6983-p2-team10/pull/93).
 
 The main-branch commit history also includes @qiong-wu-2317's initial product
 requirements, design references, and project scaffold. Automated Dependabot
 PRs are not attributed to either partner.
+
+## Review evidence
+
+As of November 15, 2026, GitHub records submitted reviews on three partner PRs
+by Xinlai before merge: [#89](https://github.com/chenx16/cs6983-p2-team10/pull/89),
+[#92](https://github.com/chenx16/cs6983-p2-team10/pull/92), and
+[#93](https://github.com/chenx16/cs6983-p2-team10/pull/93). The #92 review
+requested changes; Xinlai also contributed to #89. GitHub records Xinlai's
+additional reviews of nine partner PRs after merge.
+
+GitHub records submitted reviews on five partner PRs by Qiong before merge:
+[#22](https://github.com/chenx16/cs6983-p2-team10/pull/22),
+[#24](https://github.com/chenx16/cs6983-p2-team10/pull/24),
+[#81](https://github.com/chenx16/cs6983-p2-team10/pull/81),
+[#82](https://github.com/chenx16/cs6983-p2-team10/pull/82), and
+[#91](https://github.com/chenx16/cs6983-p2-team10/pull/91). These counts
+refer to distinct merged partner PRs with a submitted GitHub review; they do
+not imply that every review was an approval.

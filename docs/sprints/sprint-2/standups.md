@@ -175,7 +175,8 @@ for the cited activity and may differ from the dates of the Teams messages.
   [#80](https://github.com/chenx16/cs6983-p2-team10/pull/80)).
 - Next: Finish the README, demo, and submission materials.
 - Blockers: The organizer-resolution-to-leaderboard E2E flow remained open in
-  [#17](https://github.com/chenx16/cs6983-p2-team10/issues/17).
+  [#17](https://github.com/chenx16/cs6983-p2-team10/issues/17). Subsequent
+  coverage was added in [PR #84](https://github.com/chenx16/cs6983-p2-team10/pull/84).
 
 **Qiong**
 
