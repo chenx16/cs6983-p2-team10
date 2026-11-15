@@ -259,7 +259,7 @@ export const createApp = () => {
     }
   });
 
-  app.get("/api/v1/private/organizer/questions/ready-to-resolve", requireAuth, organizerReadyQuestionsRateLimit, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
+  app.get("/api/v1/private/organizer/questions/ready-to-resolve", authSessionRateLimit, requireAuth, organizerReadyQuestionsRateLimit, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
     try {
       response.json({ questions: await listReadyToResolve(request.auth!.userId) });
     } catch (error) {
