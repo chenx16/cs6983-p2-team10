@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("a new user can register and make a prediction", async ({ page }) => {
+test("a new user can place an A/B prediction", async ({ page }) => {
   const username = `e2e${Date.now()}`;
   const questionTitle = "Will the E2E home team win?";
 
@@ -37,4 +37,65 @@ test("a new user can register and make a prediction", async ({ page }) => {
   await expect(entry).toContainText("Selected Yes");
   await expect(entry).toContainText(`${charge.toLocaleString("en-US")} credits`);
   await expect(entry).toContainText("Pending");
+});
+
+test("an organizer can create an A/B question draft", async ({ page }) => {
+  await page.goto("/?view=sign-in");
+  await page.getByLabel("Username or email").fill("E2EOrganizer");
+  await page.getByLabel("Password", { exact: true }).fill("E2ePassword123");
+  await page.getByRole("button", { name: "Sign in" }).click();
+
+  await expect(page.getByRole("button", { name: "Organizer" })).toBeVisible();
+  await page.getByRole("button", { name: "Organizer" }).click();
+  await expect(page.getByRole("heading", { name: "Create fair A/B questions." })).toBeVisible();
+  await page.getByRole("button", { name: "New draft" }).click();
+
+  const title = `E2E created question ${Date.now()}`;
+  const deadline = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16);
+  const eventTime = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString().slice(0, 16);
+  await page.getByLabel("Question title").fill(title);
+  await page.getByLabel("Category").selectOption({ label: "E2E Sports" });
+  await page.getByLabel("Answer A").fill("Yes");
+  await page.getByLabel("Answer B").fill("No");
+  await page.getByLabel("Deadline (Pacific Time)").fill(deadline);
+  await page.getByLabel("Event time (Pacific Time)").fill(eventTime);
+  await page.getByLabel("Outcome criteria").fill("The E2E fixture determines the result.");
+  await page.getByLabel("Trusted source").fill("E2E test source");
+  await page.getByRole("button", { name: "Save draft" }).click();
+
+  await expect(page.getByRole("status")).toContainText("Draft saved.");
+  await page.getByRole("tab", { name: "My Questions" }).click();
+  const draft = page.locator("article").filter({ hasText: title });
+  await expect(draft).toBeVisible();
+  await draft.getByRole("button", { name: "Publish" }).click();
+  await expect(page.getByRole("status")).toContainText("Question published.");
+  await expect(draft).toContainText("OPEN");
+
+  await page.getByRole("button", { name: "Arena" }).click();
+  await expect(page.getByRole("link", { name: title })).toBeVisible();
+});
+
+test("an organizer can resolve a question and the result appears on the leaderboard", async ({ page }) => {
+  await page.goto("/?view=sign-in");
+  await page.getByLabel("Username or email").fill("E2EOrganizer");
+  await page.getByLabel("Password", { exact: true }).fill("E2ePassword123");
+  await page.getByRole("button", { name: "Sign in" }).click();
+
+  await expect(page.getByRole("button", { name: "Organizer" })).toBeVisible();
+  await page.getByRole("button", { name: "Organizer" }).click();
+  await expect(page.getByRole("heading", { name: "Create fair A/B questions." })).toBeVisible();
+  await page.getByRole("tab", { name: /Resolve/ }).click();
+  const target = page.locator("article").filter({ hasText: "E2E resolution question 5" });
+  await expect(target).toBeVisible();
+  await target.getByRole("button", { name: "Choose result" }).click();
+  await expect(page.getByRole("heading", { name: "E2E resolution question 5" })).toBeVisible();
+  await page.getByLabel("Evidence note").fill("Verified by the E2E fixture source.");
+  await page.getByRole("button", { name: "Resolve and pay out" }).click();
+  await expect(page.getByRole("status")).toContainText("Question resolved and payouts issued.");
+
+  await page.getByRole("button", { name: "Leaderboard" }).click();
+  await expect(page.getByRole("heading", { name: "Forecast well. Learn publicly." })).toBeVisible();
+  const participant = page.getByRole("row").filter({ hasText: "E2EParticipant" });
+  await expect(participant).toContainText("5");
+  await expect(participant).toContainText("100%");
 });
