@@ -18,6 +18,17 @@ administrators oversee the platform.
 Graders: for Organizer or Administrator demo access, please contact the project
 team privately through Canvas. Do not post credentials in this public repository.
 
+## Project evidence
+
+| Rubric area | Where to find the evidence |
+|---|---|
+| Functionality | [Features](#features), [production app](https://cs6983-p2-team10.vercel.app/), and [API documentation](https://cs6983-p2-team10-api.onrender.com/api/docs/) |
+| Technical excellence | [Architecture](#architecture), [database schema](docs/SCHEMA.md), and [testing and TDD](#testing) |
+| AI mastery | [AI-assisted development](#ai-assisted-development), [shared rules](AGENTS.md), and [context engineering reflection](docs/reflections/hw3-context-engineering.md) |
+| CI/CD and DevOps | [CI/CD](#cicd), [environment setup](#environments), and [workflow](.github/workflows/ci.yml) |
+| Agile and pair workflow | [Sprint and collaboration records](#agile-and-collaboration) and [contribution log](docs/CONTRIBUTIONS.md) |
+| Documentation | [Architecture and schema](#architecture), [API](#api), sprint records, and [individual reflection](docs/reflections/project-2-xinlai-chen.md) |
+
 ## Features
 
 - **Visitor:** Browse and filter the Arena, view question details and live
@@ -190,6 +201,16 @@ OpenAPI coverage tests in
 [PR #79](https://github.com/chenx16/cs6983-p2-team10/pull/79).
 Each PR records the test and fix commits.
 
+For a concrete red-to-green example, PR #74 first committed a
+[test for malformed WebSocket upgrades](https://github.com/chenx16/cs6983-p2-team10/commit/634422d04cbcc7502bc353bc3b5ca3add0383540),
+then committed the
+[fix](https://github.com/chenx16/cs6983-p2-team10/commit/3c705320b2c0a9f8da82a04775da5fddd0432266).
+For documentation coverage, PR #79 similarly committed the
+[route coverage test](https://github.com/chenx16/cs6983-p2-team10/commit/2a2511108a24c690e23df1c44921157dcf653870)
+before the [OpenAPI definitions](https://github.com/chenx16/cs6983-p2-team10/commit/fbe9944d4caf6343b6e4969c81e922c75d8798ad).
+These examples show the test-first sequence for those changes, not a claim that
+every feature followed it.
+
 ## AI-assisted development
 
 [AGENTS.md](AGENTS.md) gives contributors and coding agents shared context:
@@ -197,6 +218,11 @@ product constraints, server-side accounting and authorization rules, testing,
 and Git workflow. The team refines these instructions when experience reveals
 missing or unclear guidance. The [HW3 context engineering reflection](docs/reflections/hw3-context-engineering.md)
 describes the before/after comparison and resulting rules.
+
+In that comparison, both runs missed database migrations and wrote tests after
+the code, even though the run with rules followed the PRD more closely. The
+team responded by adding explicit Prisma, migration, and test-first rules. This
+illustrates why project context and human verification both matter.
 
 For AI-assisted TDD, the intended workflow is to review the requirements,
 have the assistant write a focused failing test, inspect and confirm the test,
@@ -241,6 +267,11 @@ deployment hook, subject to the configured production environment and secrets.
 - [Sprint meeting notes](docs/sprints/)
 - [Partner contributions](docs/CONTRIBUTIONS.md)
 - [Project 2 individual reflection](docs/reflections/project-2-xinlai-chen.md)
+
+Sprint records describe joint planning, decisions, standups, and retrospectives.
+Review feedback was shared when practical, sometimes after merge; the
+contribution log distinguishes issue assignments from completed work. Each
+partner submits their own Project 2 reflection separately.
 
 ## Environments
 
