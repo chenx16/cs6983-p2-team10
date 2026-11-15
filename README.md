@@ -2,70 +2,72 @@
 
 [![CI](https://github.com/chenx16/cs6983-p2-team10/actions/workflows/ci.yml/badge.svg)](https://github.com/chenx16/cs6983-p2-team10/actions/workflows/ci.yml)
 
-ForecastHub is a community prediction platform based on the requirements in [docs/PRD.md](docs/PRD.md). Credits are virtual only. The repository is being built as a TypeScript npm workspace with separate web and API applications.
+ForecastHub is a community prediction market where people use **virtual
+credits**, not money, to predict outcomes of A/B questions. Participants can
+follow changing crowd prices, while organizers resolve questions and
+administrators oversee the platform.
 
-## Project links
+## Links
 
 - [Production app](https://cs6983-p2-team10.vercel.app/)
-- [Production API documentation](https://cs6983-p2-team10-api.onrender.com/api/docs/)
-- [Demo video (link to be added)](#demo-video)
+- [API documentation (Swagger)](https://cs6983-p2-team10-api.onrender.com/api/docs/)
+- Demo video: link to be added
 - [Architecture and CI/CD diagrams](docs/ARCHITECTURE.md)
 - [Database schema](docs/SCHEMA.md)
-- [Partner contributions](docs/CONTRIBUTIONS.md)
 
-## Demo video
+Graders: for Organizer or Administrator demo access, please contact the project
+team privately through Canvas. Do not post credentials in this public repository.
 
-The demo video link has not been added yet.
+## Features
 
-## Current status
+- **Visitor:** Browse and filter the Arena, view question details and live
+  prices, and explore the public leaderboard.
+- **User:** Register or sign in, preview and place predictions with virtual
+  credits, check the balance, and view personal prediction history.
+- **Organizer:** Create, edit, publish, and close A/B questions; resolve eligible
+  questions after their deadline and event time using an answer and evidence.
+- **Administrator:** Use organizer tools, manage user roles, cancel questions
+  with refunds, and review administrative history.
 
-The current release includes:
+Public prices update over WebSockets; the API handles permissions, predictions,
+credits, and payouts. Features deferred from this release are listed in the
+[Sprint 2 descoping decisions](docs/sprints/sprint-2/descoping.md).
 
-- Next.js and Tailwind CSS web shell at `apps/web`
-- Express API at `apps/api`
-- Versioned health endpoint at `/api/v1/public/health`
-- Swagger UI at `/api/docs`
-- PostgreSQL and Prisma foundation
-- Shared Zod contracts in `packages/shared`
-- GitHub Actions validation workflow
-- Registration, sign-in, sign-out, and secure JWT cookie sessions
-- A/B-only release scope with rate-limited authentication routes
+## Tech stack
 
-Question markets, WebSockets, prediction workflows, and administration are
-being delivered against the scoped A/B release issues. Multi-answer questions,
-shared pools, scheduled credits, coupon codes, private profiles, balance
-history, and prediction history charts are deferred; see
-[docs/sprints/sprint-2/descoping.md](docs/sprints/sprint-2/descoping.md).
+| Area | Technology |
+|---|---|
+| Frontend | Next.js, React, TypeScript, Tailwind CSS |
+| Backend | Node.js, Express, TypeScript |
+| Database | PostgreSQL, Prisma |
+| Authentication | JWT in an HttpOnly cookie |
+| Contracts and API docs | Zod, OpenAPI, Swagger UI |
+| Testing | Vitest, Supertest; Playwright E2E proposed in [PR #78](https://github.com/chenx16/cs6983-p2-team10/pull/78) |
+| Hosting and CI | Vercel, Render, Neon, GitHub Actions |
 
-## Future work
+## Architecture
 
-Deferred features remain tracked in the PRD and GitHub issues. The Prisma schema
-retains dormant multi-answer and ledger structures so future work does not
-require a risky course-timeline migration. Known dependency audit findings are
-documented in [issue #32](https://github.com/chenx16/cs6983-p2-team10/issues/32).
+```mermaid
+flowchart LR
+    Browser["Browser"]
+    Vercel["Vercel: Next.js web app<br/>/api rewrite"]
+    Render["Render: Express API<br/>and WebSocket server"]
+    Neon["Neon: PostgreSQL"]
 
-## Prerequisites
-
-- Node.js 22.x
-- npm 10 or newer (npm 6 does not support npm workspaces)
-- Docker Desktop, for local PostgreSQL
-
-Check the toolchain with:
-
-```bash
-node --version
-npm --version
+    Browser -->|"Pages and /api requests"| Vercel
+    Vercel -->|"/api/* rewrite"| Render
+    Browser -->|"WebSocket price updates"| Render
+    Render -->|"Prisma reads and transactions"| Neon
 ```
 
-With `nvm`, the setup is:
-
-```bash
-nvm install 22
-nvm use 22
-npm --version
-```
+See [architecture and CI/CD](docs/ARCHITECTURE.md) for details and the deployment
+flow, and [schema](docs/SCHEMA.md) for the data model.
 
 ## Local development
+
+Prerequisites: Node.js 22.x, npm 10 or newer, and Docker Desktop for PostgreSQL.
+Check with `node --version` and `npm --version`; with nvm, run
+`nvm install 22` and `nvm use 22`.
 
 From the repository root:
 
@@ -74,31 +76,47 @@ cp .env.example apps/api/.env
 npm install
 docker compose up -d postgres
 npm run db:generate
+npm run db:migrate
 npm run dev
 ```
 
-The API starts on `http://localhost:4000`. The web app starts on
-`http://localhost:3000`. The web app forwards `/api/*` requests to the API
-using `API_URL`, which defaults to `http://localhost:4000` for local
-development. OpenAPI documentation is available at
-`http://localhost:4000/api/docs`. It describes the public, authentication,
-private, organizer, and administrator HTTP routes, plus the public WebSocket
-stream. Private routes use the `access_token` cookie; organizer and
-administrator actions also require the appropriate role.
+The web app runs at `http://localhost:3000`, the API at
+`http://localhost:4000`, and local Swagger at
+`http://localhost:4000/api/docs/`. The web app forwards `/api/*` to `API_URL`,
+which defaults to the local API. `NEXT_PUBLIC_API_URL` also defaults to the
+local API and is used for the API docs link and WebSocket connections.
+The API requires a `JWT_SECRET` of at least 32 characters; use a separately
+generated secret outside local development.
 
-The API currently requires a `JWT_SECRET` of at least 32 characters. The example environment file contains a local development value; use a separately generated secret outside local development.
+The web development and build scripts build the shared contracts first. After
+changing shared contracts during development, rebuild that workspace.
 
-Set `NEXT_PUBLIC_API_URL` to the API base URL for the web app. It defaults to
-`http://localhost:4000` locally, and the API docs link uses
-`${NEXT_PUBLIC_API_URL}/api/docs/` directly so Swagger's trailing slash is
-preserved. For the deployed Vercel web app, set both `NEXT_PUBLIC_API_URL` and
-`API_URL` to the deployed Render API URL.
-The Swagger UI uses a relative API server URL, so its “Try it out” requests
-work against whichever API host serves the documentation.
-The web development and build scripts compile the shared API contracts first;
-after changing shared contracts during development, rebuild that workspace.
+For **local development only**, `npm run db:seed` adds example categories,
+questions, and demo users. **Never run it against production or a public
+database:** it creates demo accounts, including an Organizer, with a publicly
+known password. Do not use the example secret outside local development.
 
-## Validation commands
+## Testing
+
+Vitest covers shared logic and web components; Supertest and API integration
+tests exercise HTTP behavior and database-backed workflows. Integration tests
+use a **separate, disposable PostgreSQL test database** and clear its data.
+The reset guard accepts only the local/CI hosts `localhost`, `127.0.0.1`, or
+`postgres`, with a database name ending in `_test`. Never use a shared,
+persistent, development, or production database for tests.
+
+After starting the local PostgreSQL service, create the dedicated database if
+it does not already exist and apply its migrations:
+
+```bash
+cp apps/api/.env.test.example apps/api/.env.test
+# Only if forecasthub_test does not already exist:
+docker compose exec postgres createdb -U forecasthub forecasthub_test
+set -a && source apps/api/.env.test && set +a
+DATABASE_URL="$DATABASE_URL_TEST" npm exec --workspace=@forecasthub/api -- prisma migrate deploy
+```
+
+Then run from the repository root:
 
 ```bash
 npm run typecheck
@@ -108,167 +126,95 @@ npm run build
 npm run smoke
 ```
 
-API integration tests use the separate local PostgreSQL database
-`forecasthub_test`, configured in `apps/api/.env.test`. Create that ignored
-file from the safe local template, then apply the existing Prisma migrations:
+`typecheck` builds the shared workspace before the tests. The smoke check
+imports the built shared package and constructs the API with native Node.js.
 
-```bash
-cp apps/api/.env.test.example apps/api/.env.test
-# If it does not already exist, create a separate, disposable test database:
-docker compose exec postgres createdb -U forecasthub forecasthub_test
-set -a && source apps/api/.env.test && set +a
-DATABASE_URL="$DATABASE_URL_TEST" npm exec --workspace=@forecasthub/api -- prisma migrate deploy
-```
+### Browser E2E
 
-The development database is not used or cleared by tests. Test cleanup refuses
-to run unless the configured database is local/CI test infrastructure and its
-name ends in `_test`. Tests clear the test database; do not use a shared or
-persistent database. Skip `createdb` if the dedicated test database already
-exists.
+Playwright coverage for registration, Arena browsing, prediction preview and
+placement, balance, and prediction history is proposed in
+[PR #78](https://github.com/chenx16/cs6983-p2-team10/pull/78), not yet merged
+into `main`. That PR contains `npm run test:e2e`, its isolated test database
+setup, and [local execution instructions](https://github.com/chenx16/cs6983-p2-team10/blob/feature/17-e2e/README.md#browser-e2e-test).
+The command and `e2e/` directory are not available on `main` until it is
+merged. The PR reports that the existing journey passed on its first run,
+rather than presenting it as a failing regression test.
 
-Database commands:
+### Test-driven development
 
-```bash
-npm run db:generate
-npm run db:migrate
-npm run db:seed
-```
+For business-critical changes, the project aims to commit failing tests before
+the implementation. Examples include the regression fixes in
+[PR #74](https://github.com/chenx16/cs6983-p2-team10/pull/74),
+[#75](https://github.com/chenx16/cs6983-p2-team10/pull/75),
+[#76](https://github.com/chenx16/cs6983-p2-team10/pull/76), and
+[#77](https://github.com/chenx16/cs6983-p2-team10/pull/77), as well as the
+OpenAPI coverage tests in
+[PR #79](https://github.com/chenx16/cs6983-p2-team10/pull/79).
+Each PR records the test and fix commits.
 
-Administrator actions require an authenticated Administrator session:
+## AI-assisted development
 
-```text
-GET   /api/v1/private/admin/users?page=1&search=
-GET   /api/v1/private/admin/questions?page=1&search=
-GET   /api/v1/private/admin/history?page=1
-PATCH /api/v1/private/admin/users/:userId/role
-POST  /api/v1/private/admin/questions/:questionId/cancel
-```
+[AGENTS.md](AGENTS.md) gives contributors and coding agents shared context:
+product constraints, server-side accounting and authorization rules, testing,
+and Git workflow. The team refines these instructions when experience reveals
+missing or unclear guidance. The [context engineering reflection](docs/REFLECTION.md)
+describes the before/after comparison and resulting rules.
 
-Authenticated users can review their own prediction history:
+For AI-assisted TDD, the intended workflow is to review the requirements,
+have the assistant write a focused failing test, inspect and confirm the test,
+commit it, then implement the fix and rerun validation. Humans review changes
+and confirm commits and pushes. AI-generated output is checked against the
+code, tests, and PR review rather than accepted without verification.
 
-```text
-GET   /api/v1/private/predictions
-```
+For example, [PR #56](https://github.com/chenx16/cs6983-p2-team10/pull/56)
+added a native Node smoke check after an ESM import failure, and
+[PR #73](https://github.com/chenx16/cs6983-p2-team10/pull/73) addressed
+shared-IP authentication lockouts with regression tests.
 
-The response is private to the signed-in user and includes the question,
-selected answer, credits charged, shares, Pacific-time prediction timestamp,
-and a timestamp displayed in Pacific Time, plus pending, won, lost, or
-refunded settlement status. It never exposes
-another user's predictions.
+## API
 
-The public leaderboard loads:
+The complete HTTP and WebSocket reference, including authentication and role
+requirements, is available in [Swagger](https://cs6983-p2-team10-api.onrender.com/api/docs/).
+See [API notes](docs/API.md) for a concise overview of the retained workflows.
 
-```text
-GET   /api/v1/public/leaderboard
-```
+## CI/CD
 
-It exposes only rank, username, scored questions, and whole-number success
-rate. A question counts as correct only when more than half of the user's
-credits on that resolved A/B question were on the correct answer. Cancelled
-questions do not count. Users with fewer than five scored questions appear as
-“Not ranked yet”; balances and net gain are never exposed.
+On each PR, GitHub Actions installs dependencies, migrates a PostgreSQL test
+database, and runs typecheck, lint, unit/integration tests, build, and the smoke
+check. It reports high-severity `npm audit` findings without blocking and
+blocks on critical production-dependency findings. CodeQL runs in a separate
+workflow, and Vercel provides a preview deployment.
 
-Public question pages also support WebSocket price updates:
+The Playwright CI job and failure screenshot/trace artifacts are part of the
+open [PR #78](https://github.com/chenx16/cs6983-p2-team10/pull/78); they are
+not yet on `main`. On a push to `main`, successful validation triggers web
+deployment to Vercel and the Render API deployment hook, subject to the
+configured production environment and secrets.
 
-```text
-WS    /api/v1/public/questions/:questionId/stream
-```
+## Agile and collaboration
 
-Messages contain the question ID, market version, aggregate A/B prices, and
-credits spent by answer. They never include user identity or private balance
-data. The browser reconnects and reloads the latest question data after a
-disconnect. Private balance, payout, notice updates, and crowd history charts
-are intentionally out of scope.
-
-User and question lists are paginated and searchable so the UI does not load
-all records at once. Administrators can use the history endpoint to review
-immutable role-change, cancellation, and refund records. Role changes require a
-target role and reason. Question cancellation requires a reason; each original
-prediction charge is refunded in a transaction, and role changes, cancellation,
-and refund records retain the responsible account and reason for auditability.
-The last active Administrator cannot be demoted.
-
-Organizer question tools are available to Organizers and Administrators:
-
-```text
-GET   /api/v1/public/categories
-GET   /api/v1/private/organizer/questions
-POST  /api/v1/private/organizer/questions
-PATCH /api/v1/private/organizer/questions/:questionId
-POST  /api/v1/private/organizer/questions/:questionId/publish
-POST  /api/v1/private/organizer/questions/:questionId/finalize
-```
-
-The Organizer workspace is available at `/organizer` and from the authenticated
-navigation. It supports creating and editing owned drafts, publishing valid A/B
-questions, and closing an open question after its deadline. Finalization closes
-the question; selecting a correct answer and issuing payouts are separate
-resolution workflows.
-
-The Organizer workspace is divided into three tabs:
-
-- **My Questions** lists questions created by the signed-in Organizer.
-- **Edit Drafts** contains the new-draft form and editable draft questions.
-- **Resolve** lists eligible questions after both their deadline and event time
-  have passed and provides the answer selector and evidence-note form.
-
-The public Arena loads `GET /api/v1/public/questions`. By default it returns
-visible, published A/B questions that are open and not past their deadline,
-ordered by the soonest deadline. Repeat the `category` query parameter to
-filter by category IDs, and use `status=OPEN`, `CLOSING_SOON`, `CLOSED`,
-`RESOLVED`, or `CANCELLED`. Closing soon means a future deadline within 24
-hours; closed includes open questions whose deadline has passed. The optional
-`type` filter accepts `AB` or `MULTI_ANSWER`, but multi-answer questions are
-outside the current release and return an empty list. Hidden and draft
-questions are never included.
-
-Organizers and Administrators can resolve eligible A/B questions:
-
-```text
-GET  /api/v1/private/organizer/questions/ready-to-resolve
-POST /api/v1/private/organizer/questions/:questionId/resolve
-```
-
-Resolution requires an answer, an evidence note, and both the deadline and event
-time to have passed. The server locks the question, marks it resolved, pays each
-winning prediction `shares × 100` credits, and
-writes payout ledger entries in the same transaction. Questions with no winning
-predictions refund their original charges. A question cannot be resolved twice.
+- [Sprint milestones](https://github.com/chenx16/cs6983-p2-team10/milestones?state=all)
+- [ForecastHub project board](https://github.com/users/chenx16/projects/1)
+- [Sprint documents](docs/sprints/)
+- [Partner contributions](docs/CONTRIBUTIONS.md)
 
 ## Environments
 
-ForecastHub uses separate local, preview, and production environments:
+- **Local:** Copy `.env.example` to `apps/api/.env`. Use Docker Compose
+  PostgreSQL and localhost URLs. Local secrets stay in ignored `.env` files.
+- **Preview:** PRs use Vercel Preview deployments. Set `API_URL` and
+  `NEXT_PUBLIC_API_URL` in Vercel's Preview environment. Previews currently
+  use the shared deployed API, not an isolated preview database.
+- **Production:** Both deploy jobs use the GitHub `production` environment
+  after validation. Configure `VERCEL_TOKEN`, `VERCEL_ORG_ID`,
+  `VERCEL_PROJECT_ID`, and `RENDER_DEPLOY_HOOK_URL` as GitHub secrets. Keep
+  application values such as `DATABASE_URL`, `JWT_SECRET`, `WEB_ORIGIN`, and
+  `API_URL` in the relevant Vercel and Render environment settings. Set both
+  `API_URL` and `NEXT_PUBLIC_API_URL` to the Render API URL in Vercel.
 
-- **Local:** Copy `.env.example` to `apps/api/.env`. Use the Docker Compose
-  PostgreSQL database and localhost URLs. Local secrets stay in ignored `.env`
-  files and are never committed.
-- **Preview:** Pull requests use Vercel Preview deployments. Configure
-  `API_URL` and `NEXT_PUBLIC_API_URL` in Vercel's Preview environment
-  variables. Preview deployments use the shared deployed API; backend
-  variables are configured on Render and are not needed by the web preview.
-  Do not put preview secrets in GitHub or the repository.
-- **Production:** The `production` GitHub environment is used by both deploy
-  jobs after validation succeeds. Store `VERCEL_TOKEN`, `VERCEL_ORG_ID`,
-  `VERCEL_PROJECT_ID`, and `RENDER_DEPLOY_HOOK_URL` as repository secrets in
-  GitHub. Store application values such as `DATABASE_URL`, `JWT_SECRET`,
-  `WEB_ORIGIN`, and `API_URL` in the Vercel and Render production environment
-  settings.
-
-## CI and deployment
-
-Every pull request runs install, typecheck, lint, test, and build checks. A
-successful merge to `main` deploys the web app to Vercel and triggers the API
-deployment on Render. Pull requests also run `npm audit --audit-level=high`
-and CodeQL analysis.
-
-Configure these GitHub Actions repository secrets before merging to `main`:
-
-- `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID` for the web app.
-- `RENDER_DEPLOY_HOOK_URL` for the API service.
-
-The deployment workflow reads these values only from GitHub repository secrets.
-Do not commit provider tokens, project identifiers that are secret, deploy
-hooks, or application environment values to the repository.
+Do not commit provider tokens, deploy hooks, credentials, or environment
+values. Swagger uses a relative API server URL, so its “Try it out” requests
+target the API host serving the documentation.
 
 ## Known limitations
 
@@ -298,10 +244,13 @@ separate critical-severity production dependency audit remains blocking.
 ## Repository layout
 
 ```text
-apps/web       Next.js frontend
-apps/api       Express API and Prisma schema
-packages/shared Shared DTOs and validation schemas
-docs           Product requirements and mockup reference
+apps/web         Next.js frontend
+apps/api         Express API and Prisma schema
+packages/shared  Shared DTOs and validation schemas
+docs             Requirements, architecture, schema, and sprint documentation
+e2e/             Playwright tests in the open PR #78; not yet on main
 ```
 
-The prototype in `docs/design` is a visual reference only. Its demo credentials, simulated persistence, and browser-side accounting must not be copied into production behavior.
+The prototype in `docs/design` is a visual reference only. Its demo credentials,
+simulated persistence, and browser-side accounting must not be copied into
+production behavior.
