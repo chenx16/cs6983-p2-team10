@@ -303,6 +303,7 @@ export const getMyPredictionHistory = async (
       const won = resolved && prediction.answerId === prediction.question.correctAnswerId;
       const noWinner = resolved
         && (winningCountByAnswer.get(`${prediction.questionId}:${prediction.question.correctAnswerId}`) ?? 0) === 0;
+      const refunded = prediction.question.status === "CANCELLED" || noWinner;
       return {
         id: prediction.id,
         questionId: prediction.questionId,
@@ -312,8 +313,8 @@ export const getMyPredictionHistory = async (
         deadline: prediction.question.deadline.toISOString(),
         creditsCharged: prediction.creditsCharged,
         shares,
-        outcome: !resolved ? "PENDING" : noWinner ? "REFUNDED" : won ? "WON" : "LOST",
-        settlementAmount: noWinner ? prediction.creditsCharged : won ? shares : 0,
+        outcome: refunded ? "REFUNDED" : !resolved ? "PENDING" : won ? "WON" : "LOST",
+        settlementAmount: refunded ? prediction.creditsCharged : won ? shares : 0,
         createdAt: prediction.createdAt.toISOString(),
       };
     }),
