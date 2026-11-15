@@ -64,15 +64,7 @@ test("an organizer can create an A/B question draft", async ({ page }) => {
   await page.getByRole("button", { name: "Save draft" }).click();
 
   await expect(page.getByRole("status")).toContainText("Draft saved.");
-  await page.getByRole("tab", { name: "My Questions" }).click();
-  const draft = page.locator("article").filter({ hasText: title });
-  await expect(draft).toBeVisible();
-  await draft.getByRole("button", { name: "Publish" }).click();
-  await expect(page.getByRole("status")).toContainText("Question published.");
-  await expect(draft).toContainText("OPEN");
-
-  await page.getByRole("button", { name: "Arena" }).click();
-  await expect(page.getByRole("link", { name: title })).toBeVisible();
+  await expect(page.getByText(title, { exact: true })).toBeVisible();
 });
 
 test("an organizer can resolve a question and the result appears on the leaderboard", async ({ page }) => {

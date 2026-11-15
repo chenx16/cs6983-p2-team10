@@ -187,6 +187,13 @@ export const openApiDocument = {
         responses: { "201": jsonResponse("Draft created.", { question: organizerQuestion }), "400": errors.invalid, ...organizerErrors },
       },
     },
+    "/api/v1/private/organizer/categories": {
+      post: {
+        summary: "Create a category", description: "Requires organizer or administrator role. The new category can be selected while creating a draft.", security: cookieSecurity,
+        requestBody: requestBody("CategoryCreateRequest", { name: "Campus" }),
+        responses: { "201": jsonResponse("Category created.", { category: { id: "category-1", name: "Campus" } }), "400": errors.invalid, "409": error("Category already exists.", "DUPLICATE_CATEGORY", "A category with this name already exists."), ...organizerErrors },
+      },
+    },
     "/api/v1/private/organizer/questions/{questionId}": {
       patch: {
         summary: "Update an owned draft", description: "Requires organizer or administrator role.", security: cookieSecurity, parameters: [questionId],
@@ -261,6 +268,7 @@ export const openApiDocument = {
       RegisterRequest: { type: "object", required: ["username", "email", "password"], properties: { username: { type: "string", minLength: 2, maxLength: 40, pattern: "^[A-Za-z0-9]+$" }, email: { type: "string", format: "email" }, password: { type: "string", format: "password", minLength: 8, description: "Must contain an uppercase letter, a lowercase letter, and a digit; must differ from username and email." } } },
       LoginRequest: { type: "object", required: ["identifier", "password"], properties: { identifier: { type: "string", description: "Username or email." }, password: { type: "string", format: "password" } } },
       AbQuestionRequest: { type: "object", required: ["title", "categoryId", "answerA", "answerB", "deadline", "eventTime", "outcomeCriteria", "source"], properties: { title: { type: "string", maxLength: 200 }, categoryId: { type: "string" }, answerA: { type: "string", maxLength: 40 }, answerB: { type: "string", maxLength: 40 }, startingPriceA: { type: "integer", minimum: 10, maximum: 90, default: 50 }, deadline: { type: "string", format: "date-time", description: "Must not be later than eventTime." }, eventTime: { type: "string", format: "date-time" }, outcomeCriteria: { type: "string", maxLength: 2000 }, source: { type: "string", maxLength: 500 } } },
+      CategoryCreateRequest: { type: "object", required: ["name"], properties: { name: { type: "string", minLength: 1, maxLength: 100 } } },
       PredictionPreviewRequest: { type: "object", required: ["answerId", "budget"], properties: { answerId: { type: "string" }, budget: { type: "integer", minimum: 10 } } },
       PlacePredictionRequest: { type: "object", required: ["answerId", "budget", "minShares", "idempotencyKey"], properties: { answerId: { type: "string" }, budget: { type: "integer", minimum: 10 }, minShares: { type: "integer", minimum: 0, description: "Minimum acceptable shares in hundredths." }, idempotencyKey: { type: "string", minLength: 1, maxLength: 255 } } },
       ResolveRequest: { type: "object", required: ["answerId", "evidenceNote"], properties: { answerId: { type: "string" }, evidenceNote: { type: "string", minLength: 1, maxLength: 2000 } } },
