@@ -133,6 +133,14 @@ describe("administrator endpoints", () => {
       }),
     ]);
 
+    const historyBefore = await request(app)
+      .get("/api/v1/private/predictions")
+      .set("Cookie", userCookie);
+    expect(historyBefore.status).toBe(200);
+    expect(historyBefore.body.predictions).toEqual([
+      expect.objectContaining({ questionId: question.id, outcome: "PENDING", settlementAmount: 0 }),
+    ]);
+
     const response = await request(app)
       .post(`/api/v1/private/admin/questions/${question.id}/cancel`)
       .set("Cookie", adminCookie)
@@ -154,6 +162,18 @@ describe("administrator endpoints", () => {
       amount: 200,
       responsibleUserId: admin.id,
     });
+    const historyAfter = await request(app)
+      .get("/api/v1/private/predictions")
+      .set("Cookie", userCookie);
+    expect(historyAfter.status).toBe(200);
+    expect(historyAfter.body.predictions).toEqual([
+      expect.objectContaining({
+        questionId: question.id,
+        questionStatus: "CANCELLED",
+        outcome: "REFUNDED",
+        settlementAmount: 200,
+      }),
+    ]);
     expect(userCookie).toContain("access_token");
   });
 });
