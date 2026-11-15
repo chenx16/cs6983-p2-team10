@@ -326,10 +326,11 @@ tokens, generated credentials, or unrelated formatting churn in commits.
 - Summarize behavior changes, migration needs, security implications, and
   verification commands.
 - Include screenshots or a short recording for UI changes.
-- Request at least one reviewer; request an API/data reviewer for accounting,
-  permissions, authentication, migrations, or moderation changes.
-- Do not merge until required checks pass, review comments are resolved, and
-  the branch is up to date with `main`.
+- Request partner review when practical, prioritizing API/data feedback for
+  accounting, permissions, authentication, migrations, and moderation.
+  Reviews can also happen after merging when work needs to continue.
+- Do not merge until required checks pass and the branch is up to date with
+  `main`. Follow up on review feedback as soon as practical.
 - Never include secrets or private user data in issue descriptions, commits,
   logs, screenshots, or PR comments.
 
