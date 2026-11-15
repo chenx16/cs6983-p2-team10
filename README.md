@@ -42,7 +42,7 @@ credits, and payouts. Features deferred from this release are listed in the
 | Database | PostgreSQL, Prisma |
 | Authentication | JWT in an HttpOnly cookie |
 | Contracts and API docs | Zod, OpenAPI, Swagger UI |
-| Testing | Vitest, Supertest; Playwright E2E proposed in [PR #78](https://github.com/chenx16/cs6983-p2-team10/pull/78) |
+| Testing | Vitest, Supertest, Playwright |
 | Hosting and CI | Vercel, Render, Neon, GitHub Actions |
 
 ## Architecture
@@ -131,14 +131,41 @@ imports the built shared package and constructs the API with native Node.js.
 
 ### Browser E2E
 
-Playwright coverage for registration, Arena browsing, prediction preview and
-placement, balance, and prediction history is proposed in
-[PR #78](https://github.com/chenx16/cs6983-p2-team10/pull/78), not yet merged
-into `main`. That PR contains `npm run test:e2e`, its isolated test database
-setup, and [local execution instructions](https://github.com/chenx16/cs6983-p2-team10/blob/feature/17-e2e/README.md#browser-e2e-test).
-The command and `e2e/` directory are not available on `main` until it is
-merged. The PR reports that the existing journey passed on its first run,
-rather than presenting it as a failing regression test.
+Playwright covers registration, Arena browsing, prediction preview and
+placement, the balance change, and prediction history. Organizer resolution
+and leaderboard updates are not yet covered by E2E; they remain part of
+[issue #17](https://github.com/chenx16/cs6983-p2-team10/issues/17).
+The existing journey passed on its first run; it adds coverage rather than
+representing a failing business regression test.
+
+The test **clears all tables** in its dedicated `forecasthub_e2e_test` database
+before every run. Its guard accepts only `localhost` or `127.0.0.1` with that
+exact database name; `DATABASE_URL` is not a fallback for `E2E_DATABASE_URL`.
+Never point it at a shared database. Use a separate checkout if a Next.js
+development server is running, because the test builds the web app and
+replaces that checkout's `.next` output.
+
+For example, with Docker running, port 55432 free, and no existing container
+named `forecasthub-e2e`:
+
+```bash
+docker run --name forecasthub-e2e --rm -d -p 127.0.0.1:55432:5432 \
+  -e POSTGRES_DB=forecasthub_e2e_test -e POSTGRES_USER=e2e \
+  -e POSTGRES_PASSWORD=e2e postgres:17-alpine
+export E2E_DATABASE_URL='postgresql://e2e:e2e@127.0.0.1:55432/forecasthub_e2e_test?schema=public'
+DATABASE_URL="$E2E_DATABASE_URL" npm run db:generate
+DATABASE_URL="$E2E_DATABASE_URL" npm exec --workspace=@forecasthub/api -- prisma migrate deploy
+npm run build --workspace=@forecasthub/api
+npx playwright install chromium
+npm run test:e2e
+docker stop forecasthub-e2e
+unset E2E_DATABASE_URL
+```
+
+Only continue if the container starts successfully, and wait for PostgreSQL to
+be ready before running migrations. Stop only the container created for this
+test. Playwright starts its own API and web servers on ports 43017 and 43018
+and refuses to reuse existing servers.
 
 ### Test-driven development
 
@@ -185,11 +212,10 @@ check. It reports high-severity `npm audit` findings without blocking and
 blocks on critical production-dependency findings. CodeQL runs in a separate
 workflow, and Vercel provides a preview deployment.
 
-The Playwright CI job and failure screenshot/trace artifacts are part of the
-open [PR #78](https://github.com/chenx16/cs6983-p2-team10/pull/78); they are
-not yet on `main`. On a push to `main`, successful validation triggers web
-deployment to Vercel and the Render API deployment hook, subject to the
-configured production environment and secrets.
+An independent E2E job runs Playwright against its own PostgreSQL service and
+uploads screenshots and traces on failure. On a push to `main`, both validation
+and E2E must pass before triggering web deployment to Vercel and the Render API
+deployment hook, subject to the configured production environment and secrets.
 
 ## Agile and collaboration
 
@@ -248,7 +274,7 @@ apps/web         Next.js frontend
 apps/api         Express API and Prisma schema
 packages/shared  Shared DTOs and validation schemas
 docs             Requirements, architecture, schema, and sprint documentation
-e2e/             Playwright tests in the open PR #78; not yet on main
+e2e/             Playwright browser tests
 ```
 
 The prototype in `docs/design` is a visual reference only. Its demo credentials,

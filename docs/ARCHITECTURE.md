@@ -24,17 +24,21 @@ performs prediction and credit operations against PostgreSQL. See the
 ```mermaid
 flowchart TD
     PR["Pull request"] --> PRCI["CI: install, audit, migrate,<br/>typecheck, lint, test, build, smoke"]
+    PR --> PRE2E["CI: Playwright E2E<br/>and failure artifacts"]
     PR --> PRCodeQL["CodeQL analysis"]
     PR --> Preview["Vercel preview"]
     PR -->|"Merge into main"| Main["Push to main"]
     Main --> MainCI["CI: validation and tests"]
+    Main --> MainE2E["CI: Playwright E2E"]
     Main --> MainCodeQL["CodeQL analysis"]
-    MainCI -->|"Validation passes; production environment"| WebDeploy["Deploy web to Vercel"]
-    MainCI -->|"Validation passes; production environment"| ApiDeploy["Trigger Render API deploy hook"]
+    MainCI --> Deploy["Validation and E2E pass;<br/>production environment"]
+    MainE2E --> Deploy
+    Deploy --> WebDeploy["Deploy web to Vercel"]
+    Deploy --> ApiDeploy["Trigger Render API deploy hook"]
 ```
 
 The CI and CodeQL workflows also run independently on `main`; the deployment
-jobs depend on CI's `validate` job. Vercel preview deployments are separate
+jobs depend on CI's `validate` and `e2e` jobs. Vercel preview deployments are separate
 from GitHub Actions validation and use the configured preview API. Current
 preview settings use the shared deployed API, not an isolated preview database.
 Deployment credentials and application secrets are managed in provider and
