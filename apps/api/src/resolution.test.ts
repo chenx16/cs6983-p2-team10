@@ -23,7 +23,88 @@ const register = async (username: string, email: string) => {
   return response.headers["set-cookie"]?.[0] ?? "";
 };
 
+const createQuestionBeforeEvent = async () => {
+  const cookie = await register("organizer", "organizer@example.com");
+  const organizer = await prisma.user.findUniqueOrThrow({ where: { username: "organizer" } });
+  await prisma.user.update({ where: { id: organizer.id }, data: { role: Role.ORGANIZER } });
+  const category = await prisma.category.create({ data: { name: "Event timing" } });
+  const question = await prisma.question.create({
+    data: {
+      title: "Has the event occurred?",
+      type: QuestionType.AB,
+      status: QuestionStatus.CLOSED,
+      categoryId: category.id,
+      organizerId: organizer.id,
+      deadline: new Date(Date.now() - 60_000),
+      eventTime: new Date(Date.now() + 60 * 60_000),
+      outcomeCriteria: "Official result",
+      source: "Official source",
+      startingPriceA: 50,
+      publishedAt: new Date(Date.now() - 120_000),
+      answers: { create: [{ text: "Yes", sortOrder: 0 }, { text: "No", sortOrder: 1 }] },
+    },
+    include: { answers: true },
+  });
+  return { cookie, question };
+};
+
 describe("A/B resolution", () => {
+  it("lists a closed question only after its event time", async () => {
+    const { cookie, question } = await createQuestionBeforeEvent();
+    const before = await request(app)
+      .get("/api/v1/private/organizer/questions/ready-to-resolve")
+      .set("Cookie", cookie);
+    expect(before.status).toBe(200);
+    expect(before.body.questions).toEqual([]);
+
+    await prisma.question.update({
+      where: { id: question.id },
+      data: { eventTime: new Date(Date.now() - 1_000) },
+    });
+    const after = await request(app)
+      .get("/api/v1/private/organizer/questions/ready-to-resolve")
+      .set("Cookie", cookie);
+    expect(after.status).toBe(200);
+    expect(after.body.questions).toEqual([expect.objectContaining({ id: question.id })]);
+  });
+
+  it("rejects resolution before event time without paying, then allows it afterwards", async () => {
+    const { cookie, question } = await createQuestionBeforeEvent();
+    const participant = await prisma.user.create({
+      data: { username: "participant", email: "participant@example.com", passwordHash: "test", balance: 800 },
+    });
+    const prediction = await prisma.prediction.create({
+      data: {
+        userId: participant.id,
+        questionId: question.id,
+        answerId: question.answers[0]!.id,
+        creditsCharged: 200,
+        shares: new Prisma.Decimal("2.50"),
+      },
+    });
+    await prisma.creditLedger.create({
+      data: { userId: participant.id, type: "PREDICTION", amount: -200, reason: "Prediction", predictionId: prediction.id },
+    });
+    const path = `/api/v1/private/organizer/questions/${question.id}/resolve`;
+    const input = { answerId: question.answers[0]!.id, evidenceNote: "Official result" };
+    const before = await request(app).post(path).set("Cookie", cookie).send(input);
+    expect(before.status).toBe(409);
+    expect(before.body.error.code).toBe("INVALID_ACTION");
+    await expect(prisma.user.findUniqueOrThrow({ where: { id: participant.id } })).resolves.toMatchObject({ balance: 800 });
+    await expect(prisma.question.findUniqueOrThrow({ where: { id: question.id } })).resolves.toMatchObject({ status: QuestionStatus.CLOSED });
+    await expect(prisma.creditLedger.count({ where: { userId: participant.id, type: "PAYOUT" } })).resolves.toBe(0);
+
+    await prisma.question.update({
+      where: { id: question.id },
+      data: { eventTime: new Date(Date.now() - 1_000) },
+    });
+    const after = await request(app).post(path).set("Cookie", cookie).send(input);
+    expect(after.status).toBe(200);
+    expect(after.body.question.status).toBe(QuestionStatus.RESOLVED);
+    await expect(prisma.user.findUniqueOrThrow({ where: { id: participant.id } })).resolves.toMatchObject({ balance: 1050 });
+    await expect(prisma.creditLedger.findFirst({ where: { userId: participant.id, type: "PAYOUT" } })).resolves.toMatchObject({ amount: 250 });
+  });
+
   it("pays winning shares atomically and marks predictions as won", async () => {
     const cookie = await register("organizer", "organizer@example.com");
     const organizer = await prisma.user.findUniqueOrThrow({ where: { username: "organizer" } });
