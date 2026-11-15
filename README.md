@@ -271,9 +271,8 @@ deployment hook, subject to the configured production environment and secrets.
   [Qiong](docs/reflections/project-2-qiong-wu.md)
 
 Sprint records describe joint planning, decisions, standups, and retrospectives.
-Review feedback was shared when practical, sometimes after merge; the
-contribution log distinguishes issue assignments from completed work. Each
-partner submits their own Project 2 reflection separately.
+The contribution log distinguishes issue assignments from completed work.
+Each partner submits their own Project 2 reflection separately.
 
 ## Environments
 

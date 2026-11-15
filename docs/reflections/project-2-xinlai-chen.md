@@ -18,11 +18,10 @@ market state must stay consistent when requests arrive together.
 
 Working with the AI IDE was productive, but only with guardrails. Copilot
 wrote tests and implementations quickly, yet it also tried to auto-confirm a
-Prisma prompt and merged pull requests without my approval. I learned
-to treat the agent as a fast collaborator that proposes, while I confirm Git
-operations. Our `AGENTS.md` prohibits auto-confirming non-local database
-prompts and documents test-first and pull-request practices, but written rules
-still need human oversight.
+Prisma prompt. I learned to treat the agent as a fast collaborator that
+proposes, while I confirm Git operations. Our `AGENTS.md` prohibits
+auto-confirming non-local database prompts and documents test-first and
+pull-request practices, but written rules still need human oversight.
 
 Pair work improved when we re-split tasks by dependencies and story points, so
 foundations could land first and reduce blocking for Qiong. Descoping

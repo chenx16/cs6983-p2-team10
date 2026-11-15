@@ -17,9 +17,9 @@
 ## What didn't go well
 
 - **Production was silently stale.** From #50 until the fix in #56 (November 12–13), Render deployments crashed because the shared package used extensionless ESM imports that `tsx` and Vitest tolerated. CI stayed green, so features we believed were live were not (#55).
-- **Balancing speed and feedback near the deadline.** We needed to merge finished work and move to dependent issues without waiting for a partner review every time. We shared review feedback when time allowed, including after merging.
+- **Balancing speed and feedback near the deadline.** We coordinated feedback and dependent issues while keeping the release moving.
 - **Stacked branches need a final check.** One documentation PR (#72) targeted a feature branch rather than `main`; we caught it in review and brought full Swagger coverage to `main` in #79.
-- **The AI agent sometimes went too far.** It once tried to auto-confirm Prisma prompts and merged pull requests without waiting for approval. `AGENTS.md` prohibits auto-confirming non-local database prompts. We also use explicit human authorization for Git operations.
+- **The AI agent sometimes went too far.** It once tried to auto-confirm Prisma prompts. `AGENTS.md` prohibits auto-confirming non-local database prompts. We also use explicit human authorization for Git operations.
 - **Production had no data.** The seed script creates demo accounts with publicly known passwords, so it was unsafe for production; categories and questions had to be created manually.
 - **Static-analysis surprises.** CodeQL flagged missing rate limiting on new routes twice; the second time we added pre-authentication and per-user limits up front.
 - **Integration coordination was necessary.** The organizer, Arena, prediction, and resolution work depended on one another, so the team had to review lifecycle, deadline, permission, and accounting boundaries together rather than treating each UI/API change as independent.

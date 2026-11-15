@@ -121,18 +121,12 @@ PRs are not attributed to either partner.
 
 ## Review evidence
 
-As of November 15, 2026, GitHub records submitted reviews on three partner PRs
-by Xinlai before merge: [#89](https://github.com/chenx16/cs6983-p2-team10/pull/89),
-[#92](https://github.com/chenx16/cs6983-p2-team10/pull/92), and
-[#93](https://github.com/chenx16/cs6983-p2-team10/pull/93). The #92 review
-requested changes; Xinlai also contributed to #89. GitHub records Xinlai's
-additional reviews of nine partner PRs after merge.
-
-GitHub records submitted reviews on five partner PRs by Qiong before merge:
+GitHub records partner reviews and feedback on pull requests including
 [#22](https://github.com/chenx16/cs6983-p2-team10/pull/22),
 [#24](https://github.com/chenx16/cs6983-p2-team10/pull/24),
 [#81](https://github.com/chenx16/cs6983-p2-team10/pull/81),
-[#82](https://github.com/chenx16/cs6983-p2-team10/pull/82), and
-[#91](https://github.com/chenx16/cs6983-p2-team10/pull/91). These counts
-refer to distinct merged partner PRs with a submitted GitHub review; they do
-not imply that every review was an approval.
+[#82](https://github.com/chenx16/cs6983-p2-team10/pull/82),
+[#89](https://github.com/chenx16/cs6983-p2-team10/pull/89),
+[#91](https://github.com/chenx16/cs6983-p2-team10/pull/91),
+[#92](https://github.com/chenx16/cs6983-p2-team10/pull/92), and
+[#93](https://github.com/chenx16/cs6983-p2-team10/pull/93).
