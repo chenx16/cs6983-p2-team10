@@ -14,7 +14,14 @@ server.on("upgrade", (request, socket, head) => {
     socket.destroy();
     return;
   }
-  const questionId = decodeURIComponent(match[1]!);
+  let questionId: string;
+  try {
+    questionId = decodeURIComponent(match[1]!);
+  } catch (error) {
+    if (!(error instanceof URIError)) throw error;
+    socket.destroy();
+    return;
+  }
   void publicQuestionCanStream(questionId).then((canStream) => {
     if (!canStream) {
       socket.destroy();
