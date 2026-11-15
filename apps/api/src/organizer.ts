@@ -1,9 +1,9 @@
-import { QuestionStatus, QuestionType } from "@prisma/client";
+import { Prisma, QuestionStatus, QuestionType } from "@prisma/client";
 import type { AbQuestionRequest } from "@forecasthub/shared";
 import { prisma } from "./prisma.js";
 
 export class OrganizerActionError extends Error {
-  constructor(public readonly code: "NOT_FOUND" | "INVALID_ACTION" | "INVALID_CATEGORY" | "DEADLINE_NOT_REACHED", message: string) {
+  constructor(public readonly code: "NOT_FOUND" | "INVALID_ACTION" | "INVALID_CATEGORY" | "DEADLINE_NOT_REACHED" | "DUPLICATE_CATEGORY", message: string) {
     super(message);
     this.name = "OrganizerActionError";
   }
@@ -45,6 +45,17 @@ export const listOrganizerQuestions = (organizerId: string) =>
   });
 
 export const listCategories = () => prisma.category.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } });
+
+export const createCategory = async (name: string) => {
+  try {
+    return await prisma.category.create({ data: { name: name.trim() }, select: { id: true, name: true } });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      throw new OrganizerActionError("DUPLICATE_CATEGORY", "A category with this name already exists.");
+    }
+    throw error;
+  }
+};
 
 export const createOrganizerQuestion = async (organizerId: string, input: AbQuestionRequest) => {
   await assertCategory(input.categoryId);

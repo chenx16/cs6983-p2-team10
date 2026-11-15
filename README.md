@@ -26,12 +26,15 @@ team privately through Canvas. Do not post credentials in this public repository
   credits, check the balance, and view personal prediction history.
 - **Organizer:** Create, edit, publish, and close A/B questions; resolve eligible
   questions after their deadline and event time using an answer and evidence.
+  Organizers can also create a category from the draft form.
 - **Administrator:** Use organizer tools, manage user roles, cancel questions
   with refunds, and review administrative history.
 
 Public prices update over WebSockets; the API handles permissions, predictions,
 credits, and payouts. Features deferred from this release are listed in the
-[Sprint 2 descoping decisions](docs/sprints/sprint-2/descoping.md).
+[Sprint 2 descoping decisions](docs/sprints/sprint-2/descoping.md). Category
+creation was subsequently added in
+[PR #88](https://github.com/chenx16/cs6983-p2-team10/pull/88).
 
 ## Tech stack
 
@@ -131,19 +134,27 @@ imports the built shared package and constructs the API with native Node.js.
 
 ### Browser E2E
 
-Playwright covers registration, Arena browsing, prediction preview and
-placement, the balance change, and prediction history. Organizer resolution
-and leaderboard updates are not yet covered by E2E; they remain part of
-[issue #17](https://github.com/chenx16/cs6983-p2-team10/issues/17).
-The existing journey passed on its first run; it adds coverage rather than
-representing a failing business regression test.
+Playwright covers three browser journeys:
+
+1. Register, browse the Arena, preview and place a prediction, and check the
+   balance and prediction history.
+2. Sign in as an Organizer, create and publish an A/B draft, and find it in
+   the Arena.
+3. Resolve an eligible question and check the seeded participant's updated
+   leaderboard result.
+
+The resolution test uses a seeded participant with previous results; it is a
+separate test from the newly registered user's prediction journey. These tests
+add coverage for existing behavior rather than claiming a failing business
+regression test.
 
 The test **clears all tables** in its dedicated `forecasthub_e2e_test` database
 before every run. Its guard accepts only `localhost` or `127.0.0.1` with that
 exact database name; `DATABASE_URL` is not a fallback for `E2E_DATABASE_URL`.
-Never point it at a shared database. Use a separate checkout if a Next.js
-development server is running, because the test builds the web app and
-replaces that checkout's `.next` output.
+The seed creates test-only accounts with a known password. Never point it at a
+shared or public database. Use a separate checkout if a Next.js development
+server is running, because the test builds the web app and replaces that
+checkout's `.next` output.
 
 For example, with Docker running, port 55432 free, and no existing container
 named `forecasthub-e2e`:
@@ -184,8 +195,8 @@ Each PR records the test and fix commits.
 [AGENTS.md](AGENTS.md) gives contributors and coding agents shared context:
 product constraints, server-side accounting and authorization rules, testing,
 and Git workflow. The team refines these instructions when experience reveals
-missing or unclear guidance. The HW3 context engineering reflection in
-[docs](docs/) describes the before/after comparison and resulting rules.
+missing or unclear guidance. The [HW3 context engineering reflection](docs/reflections/hw3-context-engineering.md)
+describes the before/after comparison and resulting rules.
 
 For AI-assisted TDD, the intended workflow is to review the requirements,
 have the assistant write a focused failing test, inspect and confirm the test,
@@ -221,8 +232,15 @@ deployment hook, subject to the configured production environment and secrets.
 
 - [Sprint milestones](https://github.com/chenx16/cs6983-p2-team10/milestones?state=all)
 - [ForecastHub project board](https://github.com/users/chenx16/projects/1)
-- [Sprint documents](docs/sprints/)
+- [Sprint 1 planning](docs/sprints/sprint-1/planning.md),
+  [standups](docs/sprints/sprint-1/standups.md), and
+  [retrospective](docs/sprints/sprint-1/retrospective.md)
+- [Sprint 2 decisions](docs/sprints/sprint-2/descoping.md),
+  [standups](docs/sprints/sprint-2/standups.md), and
+  [retrospective](docs/sprints/sprint-2/retrospective.md)
+- [Sprint meeting notes](docs/sprints/)
 - [Partner contributions](docs/CONTRIBUTIONS.md)
+- [Project 2 individual reflection](docs/reflections/project-2-xinlai-chen.md)
 
 ## Environments
 
@@ -244,9 +262,10 @@ target the API host serving the documentation.
 
 ## Known limitations
 
-The public question-detail IP limit and pre-authentication IP limit on
-prediction routes are safety nets, each defaulting to 600 requests per minute.
-They can be configured with `PUBLIC_QUESTION_DETAIL_RATE_LIMIT` and
+The public question-list, question-detail, and leaderboard routes share an IP
+limit; the pre-authentication IP limit on prediction routes is a separate safety
+net. Each defaults to 600 requests per minute and can be configured with
+`PUBLIC_QUESTION_DETAIL_RATE_LIMIT` and
 `PREDICTION_PREAUTH_RATE_LIMIT`. Behind Vercel and Render proxies, multiple
 users may share the same apparent IP address, so these limits are deliberately
 generous. Accurate IP-based rate limiting depends on a safe `trust proxy`

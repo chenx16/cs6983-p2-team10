@@ -35,6 +35,7 @@ balances. The browser reconnects and reloads question data after a disconnect.
 
 ```text
 GET   /api/v1/private/predictions
+POST  /api/v1/private/organizer/categories
 GET   /api/v1/private/organizer/questions
 POST  /api/v1/private/organizer/questions
 PATCH /api/v1/private/organizer/questions/:questionId
@@ -55,10 +56,11 @@ including the question, selected answer, charge, shares, timestamp, and
 pending, won, lost, or refunded status.
 
 Organizers and Administrators can use `/organizer` to create and edit owned
-drafts, publish valid A/B questions, close open questions after their deadline,
-and resolve eligible questions. Resolution requires an answer, evidence note,
-and both the prediction deadline and event time to have passed. It pays winning
-predictions or refunds original charges when there are no winners.
+drafts, create categories, publish valid A/B questions, close open questions
+after their deadline, and resolve eligible questions. Resolution requires an
+answer, evidence note, and both the prediction deadline and event time to have
+passed. It pays winning predictions or refunds original charges when there are
+no winners.
 
 Administrators can search users and questions, change roles, cancel questions,
 and review audit history. Cancellation refunds original prediction charges in a

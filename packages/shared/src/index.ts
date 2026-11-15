@@ -51,6 +51,11 @@ export const questionCancellationRequestSchema = z.object({
 });
 export type QuestionCancellationRequest = z.infer<typeof questionCancellationRequestSchema>;
 
+export const categoryCreateRequestSchema = z.object({
+  name: z.string().trim().min(1).max(100),
+});
+export type CategoryCreateRequest = z.infer<typeof categoryCreateRequestSchema>;
+
 export const abQuestionRequestSchema = z.object({
   title: z.string().trim().min(1).max(200),
   categoryId: z.string().trim().min(1),
