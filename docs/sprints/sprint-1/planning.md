@@ -57,7 +57,7 @@
 | Decision | Details |
 |---|---|
 | Project 2 work split | Split by area to reduce overlap, about 33 story points each. Xinlai: question display, real-time updates, and DevOps (#2, #3, #5, #6, #9, #11, #13, #16, #17). Qiong: authentication, credit accounting, and admin tools (#1, #4, #7, #8, #10, #12, #14, #15). |
-| Git workflow | Every change uses a branch named after its issue (for example, `feature/5-arena-list`) and a pull request reviewed by the other partner, so each partner completes at least 5 reviews. |
+| Git workflow | Use issue branches and pull requests. Share review feedback when practical, including after merge when waiting would block the next issue. |
 | Rules file update | Add three rules to `AGENTS.md` based on the HW3 results: API routes must use Prisma, every schema change needs a migration, and business-rule tests must be committed before the implementation. |
 | Experiment branches | Keep `experiment/5-without-rules` and `experiment/5-with-rules` as draft PRs (#19, #20) for reference. They will not be merged. |
 

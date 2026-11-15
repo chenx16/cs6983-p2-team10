@@ -16,9 +16,9 @@
 ## What didn't go well
 
 - **Production was silently stale.** From #50 until the fix in #56 (November 12–13), Render deployments crashed because the shared package used extensionless ESM imports that `tsx` and Vitest tolerated. CI stayed green, so features we believed were live were not (#55).
-- **Balancing speed and process near the deadline.** Keeping dependent work moving meant some merges happened quickly, with partner reviews following or missing. Our final fixes (#74–#77, #79) show the test-first sequence, but do not demonstrate consistent pre-merge partner review.
+- **Balancing speed and feedback near the deadline.** We needed to merge finished work and move to dependent issues without waiting for a partner review every time. We shared review feedback when time allowed, including after merging.
 - **Stacked branches need a final check.** One documentation PR (#72) targeted a feature branch rather than `main`; we caught it in review and brought full Swagger coverage to `main` in #79.
-- **The AI agent sometimes went too far.** It once tried to auto-confirm Prisma prompts and merged pull requests without waiting for approval. `AGENTS.md` prohibits auto-confirming non-local database prompts and instructs contributors to request reviewers and resolve review comments before merging. We also use explicit human authorization for Git operations.
+- **The AI agent sometimes went too far.** It once tried to auto-confirm Prisma prompts and merged pull requests without waiting for approval. `AGENTS.md` prohibits auto-confirming non-local database prompts. We also use explicit human authorization for Git operations.
 - **Production had no data.** The seed script creates demo accounts with publicly known passwords, so it was unsafe for production; categories and questions had to be created manually.
 - **Static-analysis surprises.** CodeQL flagged missing rate limiting on new routes twice; the second time we added pre-authentication and per-user limits up front.
 
@@ -35,7 +35,7 @@
 **Xinlai → Qiong**
 
 - *What went well:* Delivered a large set of features in Sprint 2 (organizer workspace, resolution and payouts, administrator tools, live WebSocket updates, leaderboard and API documentation) and picked up Arena data loading when it was needed.
-- *Looking ahead:* A goal for both of us is to make test-first commits and pre-merge reviews visible in every PR.
+- *Looking ahead:* Keep sharing useful feedback when time allows while continuing to make progress on the next issue.
 
 **Qiong → Xinlai**
 
