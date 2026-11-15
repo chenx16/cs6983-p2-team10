@@ -31,6 +31,7 @@ const routes = [
   ["/api/v1/private/questions/{questionId}/predictions", "get"],
   ["/api/v1/private/questions/{questionId}/predictions", "post"],
   ["/api/v1/private/questions/{questionId}/predictions/preview", "post"],
+  ["/api/v1/private/organizer/categories", "post"],
   ["/api/v1/private/organizer/questions", "get"],
   ["/api/v1/private/organizer/questions", "post"],
   ["/api/v1/private/organizer/questions/{questionId}", "patch"],

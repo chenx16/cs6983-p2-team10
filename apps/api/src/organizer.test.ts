@@ -83,6 +83,26 @@ describe("organizer question workflow", () => {
     expect(invalid.body.error.message).toContain("expected number to be <=90");
   });
 
+  it("allows organizers to create categories and rejects duplicates", async () => {
+    const organizerCookie = await register("organizer", "organizer@example.com");
+    const organizer = await prisma.user.findUniqueOrThrow({ where: { username: "organizer" } });
+    await prisma.user.update({ where: { id: organizer.id }, data: { role: Role.ORGANIZER } });
+
+    const created = await request(app)
+      .post("/api/v1/private/organizer/categories")
+      .set("Cookie", organizerCookie)
+      .send({ name: "  New category  " });
+    expect(created.status).toBe(201);
+    expect(created.body.category.name).toBe("New category");
+
+    const duplicate = await request(app)
+      .post("/api/v1/private/organizer/categories")
+      .set("Cookie", organizerCookie)
+      .send({ name: "New category" });
+    expect(duplicate.status).toBe(409);
+    expect(duplicate.body.error.code).toBe("DUPLICATE_CATEGORY");
+  });
+
   it("can edit drafts but finalizes only after the deadline", async () => {
     const organizerCookie = await register("organizer", "organizer@example.com");
     const organizer = await prisma.user.findUniqueOrThrow({ where: { username: "organizer" } });

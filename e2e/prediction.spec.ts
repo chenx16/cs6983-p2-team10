@@ -54,7 +54,7 @@ test("an organizer can create an A/B question draft", async ({ page }) => {
   const deadline = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16);
   const eventTime = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString().slice(0, 16);
   await page.getByLabel("Question title").fill(title);
-  await page.getByLabel("Category").selectOption({ label: "E2E Sports" });
+  await page.getByRole("combobox", { name: /^Category\b/ }).selectOption({ label: "E2E Sports" });
   await page.getByLabel("Answer A").fill("Yes");
   await page.getByLabel("Answer B").fill("No");
   await page.getByLabel("Deadline (Pacific Time)").fill(deadline);

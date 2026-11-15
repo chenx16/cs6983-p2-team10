@@ -3,10 +3,10 @@ import cors from "cors";
 import express, { type ErrorRequestHandler, type RequestHandler } from "express";
 import rateLimit from "express-rate-limit";
 import swaggerUi from "swagger-ui-express";
-import { abQuestionRequestSchema, arenaFiltersSchema, healthResponseSchema, loginRequestSchema, questionCancellationRequestSchema, registerRequestSchema, roleChangeRequestSchema } from "@forecasthub/shared";
+import { abQuestionRequestSchema, arenaFiltersSchema, categoryCreateRequestSchema, healthResponseSchema, loginRequestSchema, questionCancellationRequestSchema, registerRequestSchema, roleChangeRequestSchema } from "@forecasthub/shared";
 import { authenticateUser, clearAuthCookie, createAccessToken, publicUser, registerUser, requireAdministrator, requireAuth, requireOrganizer, setAuthCookie, type AuthenticatedRequest } from "./auth.js";
 import { AdministratorActionError, cancelQuestion, changeUserRole, listAdministratorHistory, listAdministratorQuestions, listAdministratorUsers } from "./administrator.js";
-import { OrganizerActionError, createOrganizerQuestion, finalizeOrganizerQuestion, listCategories, listOrganizerQuestions, publishOrganizerQuestion, updateOrganizerQuestion } from "./organizer.js";
+import { OrganizerActionError, createCategory, createOrganizerQuestion, finalizeOrganizerQuestion, listCategories, listOrganizerQuestions, publishOrganizerQuestion, updateOrganizerQuestion } from "./organizer.js";
 import { env } from "./env.js";
 import { prisma } from "./prisma.js";
 import { placePrediction, previewPrediction } from "./predictions.js";
@@ -171,6 +171,23 @@ export const createApp = () => {
     try {
       response.json({ categories: await listCategories() });
     } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/v1/private/organizer/categories", authSessionRateLimit, requireAuth, requireOrganizer, async (request: AuthenticatedRequest, response, next) => {
+    const parsed = categoryCreateRequestSchema.safeParse(request.body);
+    if (!parsed.success) {
+      response.status(400).json({ error: { code: "INVALID_INPUT", message: "Category name is invalid." } });
+      return;
+    }
+    try {
+      response.status(201).json({ category: await createCategory(parsed.data.name) });
+    } catch (error) {
+      if (error instanceof OrganizerActionError) {
+        response.status(error.code === "DUPLICATE_CATEGORY" ? 409 : 400).json({ error: { code: error.code, message: error.message } });
+        return;
+      }
       next(error);
     }
   });
