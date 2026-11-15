@@ -65,6 +65,29 @@ environment configuration is also complete and documented.
    transaction.
 8. The public leaderboard reflects resolved A/B results.
 
+## Sprint 2 implementation decisions
+
+The team reviewed the release scope during Meetings 4–6 and kept the
+implementation focused on the complete A/B workflow:
+
+- **A/B prediction flow (Meeting 4, November 5):** Keep LMSR pricing, preview
+  and placement, stale-price protection, idempotency, append-only charges, and
+  private prediction history on the server. Public question detail exposes
+  aggregates only.
+- **Organizer and Arena integration (Meeting 5, November 8):** Keep role,
+  ownership, publication, deadline, and privacy checks on protected API routes.
+  The Arena reads published A/B questions from the public API instead of demo
+  data. Multi-answer pools, weekly credits, charts, and expanded moderation
+  remain deferred.
+- **Resolution and accounting (Meeting 6, November 11):** Keep resolution
+  restricted to authorized organizers and administrators with evidence.
+  Payouts, refunds, and original prediction charges remain separate
+  append-only ledger records, and private prediction history remains scoped to
+  the signed-in user.
+
+The corresponding implementation results were delivered through PRs [#50],
+[#52], [#53], [#58], [#60], [#61], [#62], [#64], [#65], [#67], and [#68].
+
 ## Future work
 
 The following work remains documented for a later release:

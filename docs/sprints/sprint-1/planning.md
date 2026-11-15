@@ -69,3 +69,40 @@
 | Qiong | Review and merge PR #22 |
 | Qiong | Complete the [HW3 reflection](../../reflections/hw3-context-engineering.md) |
 | Both | Start Sprint 1 issues and record standups in `docs/sprints/sprint-1/` |
+
+---
+
+## Meeting 3 — Sprint 1 Implementation and Delivery Readiness
+
+**Date:** November 2, 2026
+**Attendees:** Xinlai Chen, Qiong Wu
+
+### Discussion
+- We reviewed the scaffold, database, authentication, Arena, and prediction work against the Sprint 1 plan. Feature work continued through issue-specific branches and pull requests with partner reviews.
+- Pull requests must pass typecheck, lint, tests, and build checks before merge. The web application deploys to Vercel and the API deploys to Render after a successful merge to `main`.
+- The API and shared package must emit runtime JavaScript and declaration files for deployment, with consistent Node and build configuration across local development and CI.
+- We agreed to add dependency auditing, CodeQL analysis, Dependabot updates, and protected production environment controls. Deployment credentials remain in GitHub or provider secrets.
+
+### Decisions
+| Decision | Details |
+|---|---|
+| Required pull-request checks | Keep typecheck, lint, tests, and build as required validation before merging. |
+| Deployment boundary | Deploy the web app through Vercel and the API through Render only after validation succeeds on `main`. |
+| Secret handling | Store deployment and application secrets in GitHub or provider environment settings; keep them out of source control. |
+| Sprint workflow | Continue issue-specific branches, partner reviews, and focused commits while completing the Sprint 1 MVP. |
+
+### Results
+| Result | Pull request |
+|---|---|
+| Added CI checks and the deployment workflow | [PR #26](https://github.com/chenx16/cs6983-p2-team10/pull/26) |
+| Fixed API build output for deployment | [PR #28](https://github.com/chenx16/cs6983-p2-team10/pull/28) |
+| Switched production web deployment to the official Vercel CLI | [PR #29](https://github.com/chenx16/cs6983-p2-team10/pull/29) |
+| Added security scanning and production environment controls | [PR #31](https://github.com/chenx16/cs6983-p2-team10/pull/31) |
+
+### Action Items
+| Owner | Task |
+|---|---|
+| Xinlai | Continue the question display, Arena, real-time, and DevOps-related Sprint 1 work. |
+| Qiong | Continue authentication, accounting, and administration-related Sprint 1 work. |
+| Both | Run the complete validation suite before merging Sprint 1 pull requests. |
+| Both | Keep standup notes and implementation results updated in the Sprint 1 documentation. |
