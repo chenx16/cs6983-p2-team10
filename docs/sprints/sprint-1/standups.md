@@ -63,3 +63,17 @@ for the cited activity and may differ from the dates of the Teams messages.
   [#24](https://github.com/chenx16/cs6983-p2-team10/pull/24).
 - Next: Prepare the assigned authentication, accounting, and admin work.
 - Blockers: None recorded.
+
+## 2026-11-02
+
+**Xinlai**
+
+- Done: Continued the question display, Arena, real-time, and DevOps work; confirmed the CI, deployment, build-output, and security requirements from Meeting 3.
+- Next: Complete the remaining Sprint 1 feature branches and validate dependent work after the CI and build foundations merge.
+- Blockers: None recorded.
+
+**Qiong**
+
+- Done: Continued authentication, accounting, and administration work; confirmed the required pull-request checks and secret-handling rules.
+- Next: Complete the remaining assigned Sprint 1 work and run the full validation suite before merging.
+- Blockers: None recorded.
