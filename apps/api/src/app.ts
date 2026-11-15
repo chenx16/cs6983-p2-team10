@@ -57,7 +57,7 @@ export const createApp = () => {
       response.status(429).json({ error: { code: "RATE_LIMITED", message: "Too many authentication requests. Try again later." } });
     },
     legacyHeaders: false,
-    max: 100,
+    max: 600,
     standardHeaders: true,
     windowMs: 15 * 60 * 1000,
   });

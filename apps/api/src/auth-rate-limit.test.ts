@@ -24,6 +24,18 @@ vi.mock("./auth.js", async (importOriginal) => {
 const { createApp } = await import("./app.js");
 
 describe("authentication rate limiting", () => {
+  it("allows 600 shared session requests before rate limiting", async () => {
+    const app = createApp();
+    for (let attempt = 0; attempt < 300; attempt++) {
+      expect((await request(app).post("/api/v1/auth/logout")).status).toBe(204);
+      expect((await request(app).get("/api/v1/private/me")).status).toBe(401);
+    }
+
+    const response = await request(app).post("/api/v1/auth/logout");
+    expect(response.status).toBe(429);
+    expect(response.body.error.code).toBe("RATE_LIMITED");
+  });
+
   it("allows repeated successful logins to a shared account", async () => {
     const app = createApp();
     for (let attempt = 0; attempt < 12; attempt++) {
