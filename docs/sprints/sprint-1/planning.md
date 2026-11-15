@@ -67,5 +67,5 @@
 | Xinlai | Finish the HW3 before/after comparison document |
 | Xinlai | Open PR #22 to fix the setup steps and add the new `AGENTS.md` rules |
 | Qiong | Review and merge PR #22 |
-| Qiong | Complete the reflection in `docs/REFLECTION.md` |
+| Qiong | Complete the [HW3 reflection](../../reflections/hw3-context-engineering.md) |
 | Both | Start Sprint 1 issues and record standups in `docs/sprints/sprint-1/` |
