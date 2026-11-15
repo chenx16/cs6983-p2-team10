@@ -55,6 +55,22 @@ describe("public leaderboard scoring", () => {
     ]);
   });
 
+  it("ranks by the unrounded success rate while displaying whole percentages", () => {
+    const result = calculateLeaderboard([
+      ...questions("user-a", "higher", 5, 7),
+      ...questions("user-b", "lower", 12, 17),
+      ...questions("user-c", "equal-smaller", 3, 6),
+      ...questions("user-d", "equal-larger", 4, 8),
+    ]);
+
+    expect(result.map((entry) => [entry.rank, entry.username, entry.successRate])).toEqual([
+      [1, "higher", 71],
+      [2, "lower", 71],
+      [3, "equal-larger", 50],
+      [4, "equal-smaller", 50],
+    ]);
+  });
+
   it("leaves users with fewer than five scored questions unranked", () => {
     const result = calculateLeaderboard([
       ...questions("user-a", "alpha", 5, 5),
