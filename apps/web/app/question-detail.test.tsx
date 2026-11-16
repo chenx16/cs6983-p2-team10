@@ -5,10 +5,12 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+const routerPush = vi.hoisted(() => vi.fn());
+
 vi.mock("next/navigation", () => ({
   useParams: () => ({ id: "question-1" }),
   useSearchParams: () => new URLSearchParams(window.location.search),
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn(), refresh: vi.fn() }),
+  useRouter: () => ({ push: routerPush, replace: vi.fn(), back: vi.fn(), refresh: vi.fn() }),
 }));
 
 const pages = import.meta.glob<{ default: ComponentType<{ params: Promise<{ id: string }> }> }>(
@@ -78,6 +80,7 @@ type FetchMock = ReturnType<typeof vi.fn<typeof fetch>>;
 
 const installApi = (options: {
   signedIn?: boolean;
+  role?: string;
   questionResponse?: Response;
   previewResponse?: typeof preview;
   place?: (request: RequestInit) => Promise<Response>;
@@ -98,7 +101,7 @@ const installApi = (options: {
     if (path === paths.me) {
       return !signedIn
         ? json({ error: { code: "UNAUTHENTICATED", message: "Authentication is required." } }, 401)
-        : json({ user: placed ? { ...user, balance: 792 } : user });
+        : json({ user: { ...user, role: options.role ?? user.role, balance: placed ? 792 : user.balance } });
     }
     if (path === paths.logout && init?.method === "POST") {
       signedIn = false;
@@ -151,6 +154,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  routerPush.mockReset();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
@@ -264,6 +268,25 @@ describe("question detail and prediction panel", () => {
     expect(requestsFor(fetchMock, paths.logout, "POST")).toHaveLength(1);
     expect(screen.queryByRole("region", { name: /your predictions/i })).toBeNull();
     expect(within(sidebar()).queryByText(user.username)).toBeNull();
+  });
+
+  it("navigates directly to prediction history from a question", async () => {
+    installApi();
+    await renderPage();
+    await screen.findByRole("heading", { name: question.title });
+    await userEvent.click(within(sidebar()).getByRole("button", { name: /my predictions/i }));
+    expect(routerPush).toHaveBeenCalledWith("/?view=profile");
+  });
+
+  it.each([
+    ["ORGANIZER", "Organizer", "/?view=organizer"],
+    ["ADMINISTRATOR", "Administration", "/?view=admin"],
+  ])("preserves %s navigation from a question", async (role, label, destination) => {
+    installApi({ role });
+    await renderPage();
+    await screen.findByRole("heading", { name: question.title });
+    await userEvent.click(within(sidebar()).getByRole("button", { name: label }));
+    expect(routerPush).toHaveBeenCalledWith(destination);
   });
 
   it("updates the sidebar balance after a successful prediction", async () => {
