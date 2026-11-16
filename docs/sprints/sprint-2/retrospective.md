@@ -36,8 +36,8 @@
 
 **Xinlai → Qiong**
 
-- *What went well:* Delivered a large set of features in Sprint 2 (organizer workspace, resolution and payouts, administrator tools, live WebSocket updates, leaderboard and API documentation) and picked up Arena data loading when it was needed.
-- *Looking ahead:* Keep sharing useful feedback when time allows while continuing to make progress on the next issue.
+- *What went well:* Qiong delivered many important Sprint 2 features, including the organizer workspace, resolution and payouts, administrator tools, live updates, leaderboard, and API documentation. She also helped integrate the Arena with real data when it was needed. Her work brought together several parts of the application and helped us complete the A/B prediction flow.
+- *Looking ahead:* Continue sharing progress and feedback as dependent features come together. Setting aside time for integration checks and pull request review before the deadline would make it easier for us to catch issues earlier and coordinate handoffs.
 
 **Qiong → Xinlai**
 
