@@ -1,4 +1,4 @@
-import { Prisma, QuestionStatus, QuestionType } from "@prisma/client";
+import { Prisma, QuestionStatus, QuestionType, Role } from "@prisma/client";
 import {
   calculatePrices,
   calculatePurchaseForBudget,
@@ -57,6 +57,19 @@ const validateQuestion = (
   }
   if (question.answers.length !== 2) {
     return { status: 422, code: "INVALID_MARKET", message: "This question must have exactly two answers." };
+  }
+  return null;
+};
+
+const validatePredictor = (
+  question: NonNullable<Awaited<ReturnType<typeof getQuestion>>>,
+  user: { id: string; role: Role },
+) => {
+  if (user.role === Role.ADMINISTRATOR) {
+    return { status: 403, code: "FORBIDDEN", message: "Administrators cannot make predictions." };
+  }
+  if (user.role === Role.ORGANIZER && question.organizerId === user.id) {
+    return { status: 403, code: "FORBIDDEN", message: "Organizers cannot predict on their own questions." };
   }
   return null;
 };
@@ -141,10 +154,15 @@ export const previewPrediction = async (
   }
   const user = await prisma.user.findUnique({
     where: { id: request.auth!.userId },
-    select: { balance: true, isActive: true },
+    select: { id: true, balance: true, isActive: true, role: true },
   });
   if (!user?.isActive) {
     errorResponse(response, 401, "UNAUTHENTICATED", "Authentication is required.");
+    return;
+  }
+  const predictorError = validatePredictor(question!, user);
+  if (predictorError) {
+    errorResponse(response, predictorError.status, predictorError.code, predictorError.message);
     return;
   }
 
@@ -226,6 +244,10 @@ export const placePrediction = async (
       const user = await lockUser(transaction, userId);
       if (!user?.isActive) {
         throw new PredictionError(401, "UNAUTHENTICATED", "Authentication is required.");
+      }
+      const predictorError = validatePredictor(question!, user);
+      if (predictorError) {
+        throw new PredictionError(predictorError.status, predictorError.code, predictorError.message);
       }
 
       const preview = await buildPreview(question!, answerId, budget, user.balance);

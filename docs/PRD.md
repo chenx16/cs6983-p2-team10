@@ -138,7 +138,7 @@ Every account has exactly one role. Roles are cumulative: an Organizer can do ev
 
 **Last-admin rule:** The app must always have at least one Administrator. The last Administrator cannot be demoted or removed.
 
-**Everyone can predict:** Users, Organizers, and Administrators all make predictions and appear on the leaderboard.
+**Prediction permissions:** Regular Users can make predictions. Organizers cannot predict on questions they own, and Administrators cannot make predictions. Organizers may predict on questions owned by another organizer.
 
 **Visitors:** People who are not signed in can browse questions, prices, charts, and the leaderboard, but cannot make predictions, redeem coupons, or see any private account information.
 

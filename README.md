@@ -186,8 +186,8 @@ unset E2E_DATABASE_URL
 
 Only continue if the container starts successfully, and wait for PostgreSQL to
 be ready before running migrations. Stop only the container created for this
-test. Playwright starts its own API and web servers on ports 43017 and 43018
-and refuses to reuse existing servers.
+test. Playwright uses ports 43017 and 43018 for its API and web servers, and
+CI runs against a dedicated PostgreSQL service.
 
 ### Test-driven development
 
