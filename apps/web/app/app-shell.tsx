@@ -1,6 +1,6 @@
 "use client";
 
-import React, { type ReactNode } from "react";
+import React, { useState, type ReactNode } from "react";
 import type { AuthUser } from "./auth-client";
 
 export type View = "arena" | "leaderboard" | "profile" | "sign-in" | "admin" | "organizer";
@@ -16,6 +16,9 @@ export function AppShell({
   user,
   onSignOut,
   signOutDisabled = false,
+  sessionStatus = "ready",
+  sessionError = "",
+  onRetrySession = () => {},
   children,
 }: {
   view: View;
@@ -24,8 +27,21 @@ export function AppShell({
   user: AuthUser | null;
   onSignOut: () => void;
   signOutDisabled?: boolean;
+  sessionStatus?: "loading" | "ready" | "error";
+  sessionError?: string;
+  onRetrySession?: () => void;
   children: ReactNode;
 }) {
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const navigate = (nextView: View) => {
+    onNavigate(nextView);
+    setMobileNavOpen(false);
+  };
+  const navigateToAuth = (mode: AuthMode) => {
+    onAuthNavigate(mode);
+    setMobileNavOpen(false);
+  };
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -33,7 +49,8 @@ export function AppShell({
         <nav aria-label="Primary navigation" className="nav-links">
           <button className={view === "arena" ? "active" : ""} onClick={() => onNavigate("arena")}><span aria-hidden="true" className="icon">⌂</span> Arena</button>
           <button className={view === "leaderboard" ? "active" : ""} onClick={() => onNavigate("leaderboard")}><span aria-hidden="true" className="icon">♜</span> Leaderboard</button>
-          {user && <button className={view === "profile" ? "active" : ""} onClick={() => onNavigate("profile")}><span aria-hidden="true" className="icon">◉</span> My predictions</button>}
+          {sessionStatus === "loading" && <span className="nav-session-status" role="status">Restoring session…</span>}
+          {sessionStatus === "ready" && user && <button className={view === "profile" ? "active" : ""} onClick={() => onNavigate("profile")}><span aria-hidden="true" className="icon">◉</span> My predictions</button>}
           {user?.role === "ADMINISTRATOR" && <button className={view === "admin" ? "active" : ""} onClick={() => onNavigate("admin")}><span aria-hidden="true" className="icon">⚙</span> Administration</button>}
           {(user?.role === "ORGANIZER" || user?.role === "ADMINISTRATOR") && <button className={view === "organizer" ? "active" : ""} onClick={() => onNavigate("organizer")}><span aria-hidden="true" className="icon">✎</span> Organizer</button>}
           <a href={apiDocsUrl}><span aria-hidden="true" className="icon">⌁</span> API docs</a>
@@ -57,9 +74,27 @@ export function AppShell({
       </aside>
       <div className="mobile-bar">
         <button className="brand" onClick={() => onNavigate("arena")}><span className="brand-mark">↗</span> ForecastHub</button>
-        <button className="mobile-menu" aria-label="Open navigation" onClick={() => onNavigate("leaderboard")}>☰</button>
+        <button aria-controls="mobile-primary-navigation" aria-expanded={mobileNavOpen} aria-label={mobileNavOpen ? "Close navigation" : "Open navigation"} className="mobile-menu" onClick={() => setMobileNavOpen((open) => !open)} type="button">{mobileNavOpen ? "×" : "☰"}</button>
       </div>
-      <main className="main-content">{children}</main>
+      {mobileNavOpen && <nav aria-label="Mobile primary navigation" className="mobile-nav-links" id="mobile-primary-navigation">
+        <button className={view === "arena" ? "active" : ""} onClick={() => navigate("arena")} type="button"><span aria-hidden="true" className="icon">⌂</span> Arena</button>
+        <button className={view === "leaderboard" ? "active" : ""} onClick={() => navigate("leaderboard")} type="button"><span aria-hidden="true" className="icon">♜</span> Leaderboard</button>
+        {sessionStatus === "loading" && <span className="nav-session-status" role="status">Restoring session…</span>}
+        {sessionStatus === "ready" && user && <button className={view === "profile" ? "active" : ""} onClick={() => navigate("profile")} type="button"><span aria-hidden="true" className="icon">◉</span> My predictions</button>}
+        {user?.role === "ADMINISTRATOR" && <button className={view === "admin" ? "active" : ""} onClick={() => navigate("admin")} type="button"><span aria-hidden="true" className="icon">⚙</span> Administration</button>}
+        {(user?.role === "ORGANIZER" || user?.role === "ADMINISTRATOR") && <button className={view === "organizer" ? "active" : ""} onClick={() => navigate("organizer")} type="button"><span aria-hidden="true" className="icon">✎</span> Organizer</button>}
+        <a href={apiDocsUrl}><span aria-hidden="true" className="icon">⌁</span> API docs</a>
+        <div className="mobile-nav-auth">
+          {user ? <button className="button" disabled={signOutDisabled} onClick={onSignOut} type="button">Sign out · {user.balance.toLocaleString()} credits</button> : <>
+            <button className="button" onClick={() => navigateToAuth("login")} type="button">Sign in</button>
+            <button className="button button-primary" onClick={() => navigateToAuth("register")} type="button">Register</button>
+          </>}
+        </div>
+      </nav>}
+      <main className="main-content">
+        {sessionStatus === "error" && <p className="session-error" role="alert">{sessionError || "Unable to restore your session."} <button className="session-retry" onClick={onRetrySession} type="button">Retry</button></p>}
+        {children}
+      </main>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { AuthPage } from "./auth-page";
 import { getCurrentUser, logout } from "./auth-client";
@@ -200,13 +200,34 @@ export default function HomePage() {
   const [view, setView] = useState<View>("arena");
   const [authMode, setAuthMode] = useState<AuthMode>("login");
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [sessionStatus, setSessionStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [sessionError, setSessionError] = useState("");
+  const sessionRequestId = useRef(0);
+
+  const restoreSession = async () => {
+    const requestId = ++sessionRequestId.current;
+    setSessionStatus("loading");
+    setSessionError("");
+    try {
+      const currentUser = await getCurrentUser();
+      if (requestId !== sessionRequestId.current) return;
+      setUser(currentUser);
+      setSessionStatus("ready");
+    } catch (requestError) {
+      if (requestId !== sessionRequestId.current) return;
+      setSessionError(requestError instanceof Error ? requestError.message : "Unable to restore your session.");
+      setSessionStatus("error");
+    }
+  };
+
   useEffect(() => {
     const requestedView = new URLSearchParams(window.location.search).get("view");
     if (requestedView === "leaderboard" || requestedView === "admin" || requestedView === "organizer" || requestedView === "sign-in") setView(requestedView);
-    void getCurrentUser().then(setUser);
+    void restoreSession();
+    return () => { sessionRequestId.current++; };
   }, []);
   const handleAuthenticated = async () => {
-    setUser(await getCurrentUser());
+    await restoreSession();
     setView("arena");
   };
   const handleSignOut = async () => {
@@ -228,5 +249,8 @@ export default function HomePage() {
     onSignOut={() => { void handleSignOut(); }}
     user={user}
     view={view}
+    sessionStatus={sessionStatus}
+    sessionError={sessionError}
+    onRetrySession={() => { void restoreSession(); }}
   >{content}</AppShell>;
 }

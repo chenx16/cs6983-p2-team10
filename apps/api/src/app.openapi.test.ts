@@ -99,4 +99,12 @@ describe("OpenAPI documentation served by Swagger", () => {
     expect(Object.keys(document.paths[path]?.post?.responses ?? {}))
       .toEqual(expect.arrayContaining(["200", "201", "401", "404", "409", "422", "429"]));
   });
+
+  it("serves a responsive ForecastHub theme for the API reference", async () => {
+    const response = await request(createApp()).get("/api/docs/");
+    expect(response.status).toBe(200);
+    expect(response.text).toContain("ForecastHub API Reference");
+    expect(response.text).toContain(".swagger-ui .scheme-container");
+    expect(response.text).toContain("@media (max-width: 640px)");
+  });
 });
