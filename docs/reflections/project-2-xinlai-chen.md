@@ -16,6 +16,12 @@ duplicate submissions. Concurrency tests against PostgreSQL made those
 guarantees concrete. A successful response alone is not enough: balances and
 market state must stay consistent when requests arrive together.
 
+For a malformed WebSocket path regression, I committed a test reproducing the
+crash before the fix. The sequence made the problem and solution easier to
+review. Unit tests checked pricing math, integration tests exercised the API
+and database, and Playwright tested browser journeys. Each layer served a
+different purpose.
+
 Working with the AI IDE was productive, but only with guardrails. Copilot
 wrote tests and implementations quickly, yet it also tried to auto-confirm a
 Prisma prompt. I learned to treat the agent as a fast collaborator that
@@ -23,11 +29,19 @@ proposes, while I confirm Git operations. Our `AGENTS.md` prohibits
 auto-confirming non-local database prompts and documents test-first and
 pull-request practices, but written rules still need human oversight.
 
+In our comparison with and without the rules file, the rules helped the agent
+follow pricing requirements more closely, but neither run produced a migration
+or followed test-first ordering. We added explicit Prisma, migration, and
+testing guidance. Context improves proposals, but tests and review still need
+to verify them.
+
 Pair work improved when we re-split tasks by dependencies and story points, so
 foundations could land first and reduce blocking for Qiong. Descoping
 multi-answer questions and coupons was difficult, but it let us finish the core
 A/B flow rather than several half-built features. We shared feedback when
-possible while continuing to move dependent work forward.
+possible while continuing to move dependent work forward. Qiong's organizer
+and resolution work depended on authentication and predictions, which showed
+me the value of shared contracts and clear communication.
 
 Next time I would add smoke and end-to-end checks early, then verify the live
 deployment after merges. A green pipeline is useful evidence, but checking the
