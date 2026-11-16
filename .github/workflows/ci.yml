@@ -78,6 +78,14 @@ jobs:
       - run: npm run db:generate
       - run: npm exec --workspace=@forecasthub/api -- prisma migrate deploy
       - run: npm run build
+      - name: Ensure Playwright ports are free
+        run: |
+          for port in 43017 43018; do
+            pids="$(lsof -ti :"$port" || true)"
+            if [ -n "$pids" ]; then
+              kill $pids || true
+            fi
+          done
       - run: npm run test:e2e
       - name: Upload Playwright failure artifacts
         if: failure()

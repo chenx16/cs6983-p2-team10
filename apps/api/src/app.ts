@@ -16,6 +16,25 @@ import { resolveAbQuestionRequestSchema } from "@forecasthub/shared";
 import { getPublicLeaderboard } from "./leaderboard.js";
 import { openApiDocument } from "./openapi.js";
 
+const swaggerCss = `
+  body { background: #f2f3f6; }
+  .swagger-ui { color: #15181f; font-family: "Segoe UI", system-ui, sans-serif; }
+  .swagger-ui .topbar { background: #172033; }
+  .swagger-ui .topbar-wrapper { max-width: 1180px; margin: 0 auto; padding: 6px 0; }
+  .swagger-ui .wrapper { max-width: 1180px; padding: 0 24px; }
+  .swagger-ui .info { margin: 36px auto 28px; }
+  .swagger-ui .info .title { color: #15181f; font-size: 2rem; }
+  .swagger-ui .scheme-container { background: #fff; border: 1px solid #dfe2e9; border-radius: 12px; box-shadow: none; margin: 0 auto 20px; padding: 16px; }
+  .swagger-ui .opblock { border-radius: 10px; box-shadow: none; }
+  .swagger-ui .opblock .opblock-summary { padding: 8px 14px; }
+  .swagger-ui .btn.authorize { border-color: #2f6feb; color: #2f6feb; }
+  .swagger-ui .btn.authorize svg { fill: #2f6feb; }
+  @media (max-width: 640px) {
+    .swagger-ui .wrapper { padding: 0 12px; }
+    .swagger-ui .opblock .opblock-summary { padding: 8px; }
+  }
+`;
+
 export const createApp = () => {
   const app = express();
   const predictionRateLimitKey = (request: AuthenticatedRequest) => {
@@ -57,7 +76,7 @@ export const createApp = () => {
       response.status(429).json({ error: { code: "RATE_LIMITED", message: "Too many authentication requests. Try again later." } });
     },
     legacyHeaders: false,
-    max: 100,
+    max: 600,
     standardHeaders: true,
     windowMs: 15 * 60 * 1000,
   });
@@ -457,7 +476,10 @@ export const createApp = () => {
     }
   });
 
-  app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(openApiDocument));
+  app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(openApiDocument, {
+    customCss: swaggerCss,
+    customSiteTitle: "ForecastHub API Reference",
+  }));
 
   const errorHandler: ErrorRequestHandler = (error, _request, response, _next) => {
     console.error(error);

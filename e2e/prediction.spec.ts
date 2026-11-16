@@ -39,7 +39,7 @@ test("a new user can place an A/B prediction", async ({ page }) => {
   await expect(entry).toContainText("Pending");
 });
 
-test("an organizer can create an A/B question draft", async ({ page }) => {
+test("an organizer can create a category and publish an A/B question", async ({ page }) => {
   await page.goto("/?view=sign-in");
   await page.getByLabel("Username or email").fill("E2EOrganizer");
   await page.getByLabel("Password", { exact: true }).fill("E2ePassword123");
@@ -51,10 +51,15 @@ test("an organizer can create an A/B question draft", async ({ page }) => {
   await page.getByRole("button", { name: "New draft" }).click();
 
   const title = `E2E created question ${Date.now()}`;
+  const categoryName = `E2E category ${Date.now()}`;
   const deadline = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16);
   const eventTime = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString().slice(0, 16);
+  await page.getByLabel("New category").fill(categoryName);
+  await page.getByRole("button", { name: "Add category" }).click();
+  await expect(page.getByRole("status")).toContainText("Category created.");
+  const category = page.getByRole("combobox", { name: /^Category\b/ });
+  await expect(category.locator("option:checked")).toHaveText(categoryName);
   await page.getByLabel("Question title").fill(title);
-  await page.getByRole("combobox", { name: /^Category\b/ }).selectOption({ label: "E2E Sports" });
   await page.getByLabel("Answer A").fill("Yes");
   await page.getByLabel("Answer B").fill("No");
   await page.getByLabel("Deadline (Pacific Time)").fill(deadline);
@@ -67,6 +72,7 @@ test("an organizer can create an A/B question draft", async ({ page }) => {
   await page.getByRole("tab", { name: "My Questions" }).click();
   const draft = page.locator("article").filter({ hasText: title });
   await expect(draft).toBeVisible();
+  await expect(draft).toContainText(categoryName);
   await draft.getByRole("button", { name: "Publish" }).click();
   await expect(page.getByRole("status")).toContainText("Question published.");
   await expect(draft).toContainText("OPEN");

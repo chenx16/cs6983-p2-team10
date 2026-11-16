@@ -4,6 +4,26 @@ We used Microsoft Teams for async standups and met periodically. These entries
 were compiled from Git, GitHub, and Xinlai's confirmation. Dates use Pacific time
 for the cited activity and may differ from the dates of the Teams messages.
 
+## 2026-11-05
+
+**Xinlai**
+
+- Done: Started the A/B-only Sprint 2 flow and aligned LMSR, prediction
+  preview, placement, and question-detail requirements with the server-authority
+  rules from Meeting 4.
+- Next: Implement and review the question detail, prediction panel, and Arena
+  integration.
+- Blockers: Organizer and question-detail work depended on the prediction and
+  authentication foundations.
+
+**Qiong**
+
+- Done: Reviewed the server-side accounting, idempotency, stale-price, and
+  private-history requirements for the A/B flow.
+- Next: Continue organizer, resolution, and payout workflows on top of the
+  shared prediction foundations.
+- Blockers: None recorded.
+
 ## 2026-11-06
 
 **Xinlai**
@@ -41,6 +61,23 @@ for the cited activity and may differ from the dates of the Teams messages.
 - Next: Prepare the data and permission requirements for those features.
 - Blockers: None recorded.
 
+## 2026-11-08
+
+**Xinlai**
+
+- Done: Reviewed the organizer-to-Arena lifecycle, public aggregate response
+  boundary, Pacific Time deadlines, and A/B-only release scope from Meeting 5.
+- Next: Continue Arena, live-update, and public API integration work.
+- Blockers: The Arena depended on published organizer questions and the public
+  API.
+
+**Qiong**
+
+- Done: Confirmed server-side ownership, role, publication, deadline, and
+  privacy checks for organizer workflows.
+- Next: Continue organizer, resolution, payout, and permission workflows.
+- Blockers: None recorded.
+
 ## 2026-11-11
 
 **Xinlai**
@@ -54,7 +91,8 @@ for the cited activity and may differ from the dates of the Teams messages.
 
 **Qiong**
 
-- Done: Sprint 2 descoping decisions list both partners as participants
+- Done: Confirmed the Sprint 2 descoping decisions and the resolution, payout,
+  ledger, and private-history invariants from Meeting 6
   ([descoping notes](descoping.md)).
 - Next: Prepare organizer, resolution, live-update, and admin work
   around the narrowed A/B scope.
@@ -141,6 +179,7 @@ for the cited activity and may differ from the dates of the Teams messages.
 
 **Qiong**
 
-- Done: Followed up on completed feature work and shared documentation.
+- Done: Consolidated meeting notes
+  [PR #90](https://github.com/chenx16/cs6983-p2-team10/pull/90).
 - Next: Coordinate final review and demo preparation with Xinlai.
 - Blockers: None recorded.

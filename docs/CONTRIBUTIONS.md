@@ -71,7 +71,8 @@ The following links are PRs rather than issue numbers:
   [#77](https://github.com/chenx16/cs6983-p2-team10/pull/77),
   [#79](https://github.com/chenx16/cs6983-p2-team10/pull/79).
 - [#78](https://github.com/chenx16/cs6983-p2-team10/pull/78) adds Playwright
-  coverage for part of #17 and was open at this snapshot. The HW3 experiments
+  coverage for part of #17; it was open at this snapshot and has since been
+  merged. The HW3 experiments
   [#19](https://github.com/chenx16/cs6983-p2-team10/pull/19) and
   [#20](https://github.com/chenx16/cs6983-p2-team10/pull/20) were closed without
   merging.
