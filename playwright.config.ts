@@ -20,7 +20,7 @@ export default defineConfig({
     {
       command: "npm run start --workspace=@forecasthub/api",
       url: `${apiUrl}/api/v1/public/health`,
-      reuseExistingServer: false,
+      reuseExistingServer: true,
       timeout: 120_000,
       env: {
         DATABASE_URL: databaseUrl,
@@ -32,7 +32,7 @@ export default defineConfig({
     {
       command: "npm run build --workspace=@forecasthub/web && npm run start --workspace=@forecasthub/web -- --hostname 127.0.0.1 --port 43018",
       url: webUrl,
-      reuseExistingServer: false,
+      reuseExistingServer: true,
       timeout: 180_000,
       env: { API_URL: apiUrl, NEXT_PUBLIC_API_URL: apiUrl },
     },

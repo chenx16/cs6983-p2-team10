@@ -152,10 +152,9 @@ docker stop forecasthub-e2e
 unset E2E_DATABASE_URL
 ```
 
-Wait for PostgreSQL to be ready before running migrations. The test starts its
-own API and web servers on ports 43017 and 43018 and refuses to reuse running
-servers. CI runs it against a separate PostgreSQL service and uploads failure
-screenshots and traces.
+Wait for PostgreSQL to be ready before running migrations. The test uses ports
+43017 and 43018 for the API and web servers. CI runs it against a separate
+PostgreSQL service and uploads failure screenshots and traces.
 
 Database commands:
 
