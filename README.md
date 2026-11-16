@@ -109,13 +109,9 @@ generated secret outside local development.
 The web development and build scripts build the shared contracts first. After
 changing shared contracts during development, rebuild that workspace.
 
-For **local development only**, `npm run db:seed` adds example categories,
-questions, and demo users. **Never run it against production or a public
-database:** it creates demo accounts, including an Organizer, with a publicly
-known password. Do not use the example secret outside local development.
-The seed stores demo passwords using scrypt, while sign-in currently checks
-bcrypt hashes, so these seeded accounts cannot sign in. The seed also creates
-users, so register the first Administrator before seeding an empty database.
+Never run the development seed against production or a public database: it
+creates demo accounts with a publicly known password. Do not use the example
+secret outside local development.
 
 ## Testing
 
