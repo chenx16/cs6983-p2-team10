@@ -26,6 +26,7 @@ const categories = () => new Response(JSON.stringify({
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  window.history.replaceState({}, "", "/");
 });
 
 describe("Arena question links", () => {
@@ -172,5 +173,55 @@ describe("authenticated navigation", () => {
     expect(await screen.findByText(/session service unavailable/i)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
     expect(await screen.findByRole("button", { name: /my predictions/i })).toBeTruthy();
+  });
+
+  it("opens prediction history from a profile link after restoring the session", async () => {
+    window.history.replaceState({}, "", "/?view=profile");
+    let resolveSession!: (response: Response) => void;
+    installSignedInApi(() => new Promise<Response>((resolve) => { resolveSession = resolve; }));
+    render(<HomePage />);
+
+    await screen.findByText(/restoring session/i);
+    expect(screen.queryByRole("heading", { name: "Sign in" })).toBeNull();
+    resolveSession(new Response(JSON.stringify({ user: signedInUser }), {
+      headers: { "Content-Type": "application/json" },
+    }));
+    expect(await screen.findByRole("heading", { name: "Your predictions" })).toBeTruthy();
+    expect(await screen.findByText("No predictions yet.")).toBeTruthy();
+  });
+
+  it("prompts signed-out visitors to sign in when following a profile link", async () => {
+    window.history.replaceState({}, "", "/?view=profile");
+    installSignedInApi(async () => new Response(null, { status: 401 }));
+    render(<HomePage />);
+
+    expect(await screen.findByRole("heading", { name: "Sign in" })).toBeTruthy();
+  });
+
+  it("returns to prediction history after signing in from a profile link", async () => {
+    window.history.replaceState({}, "", "/?view=profile");
+    let signedIn = false;
+    vi.stubGlobal("React", React);
+    vi.stubGlobal("fetch", vi.fn<typeof fetch>(async (input) => {
+      const path = String(input);
+      if (path === "/api/v1/auth/login") {
+        signedIn = true;
+        return new Response(JSON.stringify({ user: signedInUser }));
+      }
+      if (path === "/api/v1/private/me") {
+        return signedIn ? new Response(JSON.stringify({ user: signedInUser })) : new Response(null, { status: 401 });
+      }
+      if (path === "/api/v1/private/predictions") return new Response(JSON.stringify({ predictions: [] }));
+      if (path === "/api/v1/public/categories") return categories();
+      if (path.startsWith("/api/v1/public/questions")) return new Response(JSON.stringify({ questions: [] }));
+      throw new Error(`Unexpected request: ${path}`);
+    }));
+    render(<HomePage />);
+
+    await screen.findByRole("heading", { name: "Sign in" });
+    fireEvent.change(screen.getByLabelText("Username or email"), { target: { value: "forecaster" } });
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "Password1" } });
+    fireEvent.click(within(screen.getByRole("main")).getByRole("button", { name: "Sign in" }));
+    expect(await screen.findByRole("heading", { name: "Your predictions" })).toBeTruthy();
   });
 });

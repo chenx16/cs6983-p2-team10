@@ -374,7 +374,7 @@ export default function QuestionDetailPage() {
       view="arena"
       user={user}
       signOutDisabled={submitting || Boolean(pending)}
-      onNavigate={(view) => router.push(view === "leaderboard" ? "/?view=leaderboard" : "/")}
+      onNavigate={(view) => router.push(view === "arena" ? "/" : `/?view=${view}`)}
       onAuthNavigate={(mode) => { setAuthMode(mode); setAuthView(true); }}
       onSignOut={() => { void handleSignOut(); }}
     >
