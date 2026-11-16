@@ -222,13 +222,13 @@ export default function HomePage() {
 
   useEffect(() => {
     const requestedView = new URLSearchParams(window.location.search).get("view");
-    if (requestedView === "leaderboard" || requestedView === "admin" || requestedView === "organizer" || requestedView === "sign-in") setView(requestedView);
+    if (requestedView === "leaderboard" || requestedView === "admin" || requestedView === "organizer" || requestedView === "sign-in" || requestedView === "profile") setView(requestedView);
     void restoreSession();
     return () => { sessionRequestId.current++; };
   }, []);
   const handleAuthenticated = async () => {
     await restoreSession();
-    setView("arena");
+    setView((current) => current === "profile" ? "profile" : "arena");
   };
   const handleSignOut = async () => {
     await logout();
@@ -237,11 +237,15 @@ export default function HomePage() {
   const content = useMemo(() => {
     if (view === "sign-in") return <SignIn mode={authMode} onBack={handleAuthenticated} />;
     if (view === "leaderboard") return <Leaderboard />;
-    if (view === "profile") return user ? <PredictionHistory /> : <AuthPage initialMode="login" onAuthenticated={handleAuthenticated} />;
+    if (view === "profile") {
+      if (sessionStatus === "loading") return <p role="status">Checking your session…</p>;
+      if (sessionStatus === "error") return null;
+      return user ? <PredictionHistory /> : <AuthPage initialMode="login" onAuthenticated={handleAuthenticated} />;
+    }
     if (view === "admin") return <AdminPage user={user} />;
     if (view === "organizer") return <OrganizerPage user={user} />;
     return <Arena />;
-  }, [authMode, user, view]);
+  }, [authMode, sessionStatus, user, view]);
   if (view === "sign-in") return content;
   return <AppShell
     onAuthNavigate={(mode) => { setAuthMode(mode); setView("sign-in"); }}
