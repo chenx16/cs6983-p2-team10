@@ -109,6 +109,10 @@ and whether administrators may predict at all. That decision should be
 resolved in the PRD before implementation rather than inferred from a UI
 mockup.
 
+The later course release recorded and implemented this decision in
+[PR #96](https://github.com/chenx16/cs6983-p2-team10/pull/96): Organizers
+cannot predict on their own questions, and Administrators cannot predict.
+
 After the before-and-after comparison, we added three rules to `AGENTS.md`:
 API routes must use Prisma, with in-memory stores allowed only in tests and
 seed scripts; every schema change must include a migration; and business-rule

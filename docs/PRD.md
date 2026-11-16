@@ -108,11 +108,32 @@ history and rationale.
 - Private profile pages, balance history, and private per-question results
 - Private WebSocket balance, payout, and notice updates
 - User removal, question hiding, resolution corrections, and category
-  management
+  renaming and removal
 - Prisma and Next.js major-version upgrades for the known audit findings
 
 These are deferred rather than deleted from the PRD; future issues may restore
 them after the course timeline.
+
+### Course-release implementation notes
+
+The original user stories below remain the product vision. The implemented
+release differs in these respects:
+
+- Organizers and Administrators can create categories while drafting a
+  question; renaming and removal are not implemented.
+- Administrators cannot predict; Organizers can predict only on questions
+  owned by another organizer. See the role rules below.
+- Private HTTP requests authenticate with an HttpOnly `access_token` cookie,
+  rather than the Bearer header described in US-8. Current rate limits and
+  their proxy limitations are documented in the [README](../README.md#known-limitations).
+- The current A/B resolution implementation refunds the original charges
+  when there are no winning predictions. This differs from US-5's statement
+  that losing predictions receive no refund; the intended rule needs product
+  confirmation.
+- Playwright covers registration and prediction, category creation and
+  publication, and organizer resolution and leaderboard results as separate
+  journeys. The resolution test uses a seeded participant rather than the
+  newly registered user.
 
 ---
 
@@ -126,7 +147,9 @@ ForecastHub also serves developers who want to read ForecastHub data or build to
 
 ### 3.2 Roles
 
-Every account has exactly one role. Roles are cumulative: an Organizer can do everything a User can do, and an Administrator can do everything an Organizer can do.
+Every account has exactly one role. Organizers and Administrators have access to
+organizer tools, subject to ownership checks; prediction permissions differ by
+role as described below.
 
 | Role | Who they are | Main responsibilities |
 |---|---|---|
@@ -134,7 +157,7 @@ Every account has exactly one role. Roles are cumulative: an Organizer can do ev
 | **Organizer** | A user promoted by an Administrator | Create, publish, clarify, and resolve their own questions |
 | **Administrator** | The person who sets up the app, plus anyone they promote | Manage users, assign roles, manage categories, create coupon codes, moderate all questions, correct results |
 
-**Setup rule:** The first account created when the app is set up becomes the first Administrator. After that, anyone can register on the public website, and new accounts get the User role.
+**Setup rule:** A registration on an empty database becomes the first Administrator. After that, anyone can register on the public website, and new accounts get the User role.
 
 **Last-admin rule:** The app must always have at least one Administrator. The last Administrator cannot be demoted or removed.
 
@@ -153,7 +176,7 @@ Every account has exactly one role. Roles are cumulative: an Organizer can do ev
 **Acceptance criteria**
 1. Anyone can visit the ForecastHub website and browse questions, prices, charts, and the leaderboard without signing in. "Register" and "Sign in" buttons are always visible, and trying to make a prediction while signed out takes me to sign in.
 2. To register, I enter a username, an email address, and a password. New usernames must be 2 to 40 characters and contain only English letters (A–Z, a–z) and digits (0–9). Existing usernames remain valid for sign-in. Each username and each email address can be used for only one account.
-3. When I register, I am signed in right away. My account has the User role, and a balance of 1,000 credits.
+3. When I register, I am signed in right away with a balance of 1,000 credits. A registration on an empty database is an Administrator; later accounts have the User role.
 4. If my registration details are invalid (for example, the email is already registered or the username is taken), the form shows a clear message next to the field and no account is created.
 5. I can sign in with my email address and password, and sign out.
 6. When I sign in, the server issues a JWT (JSON Web Token) that the app sends with every private request. The token expires after 7 days, after which I must sign in again. Signing out removes the token from my browser.
