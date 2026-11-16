@@ -15,6 +15,7 @@ import {
 } from "@forecasthub/shared";
 import { AuthPage } from "../../auth-page";
 import { getCurrentUser, logout, type AuthUser } from "../../auth-client";
+import { getOrganizerQuestions } from "../../organizer-client";
 import { AppShell, type AuthMode } from "../../app-shell";
 
 type PreviewSelection = {
@@ -95,6 +96,7 @@ export default function QuestionDetailPage() {
   const [submitting, setSubmitting] = useState(false);
   const [pending, setPending] = useState<PlacePredictionRequest | null>(null);
   const [serverClosed, setServerClosed] = useState(false);
+  const [predictionBlockedReason, setPredictionBlockedReason] = useState("");
   const [liveStatus, setLiveStatus] = useState<"Live" | "Reconnecting…">("Live");
   const [now, setNow] = useState(() => Date.now());
   const submittingRef = useRef(false);
@@ -111,6 +113,7 @@ export default function QuestionDetailPage() {
     setAnswerId("");
     setPreview(null);
     setServerClosed(false);
+    setPredictionBlockedReason("");
 
     void Promise.all([
       requestJson(questionPath).then((value) => questionDetailResponseSchema.parse(value)),
@@ -119,6 +122,18 @@ export default function QuestionDetailPage() {
       if (!active) return;
       setQuestion(detail);
       setUser(currentUser);
+      if (currentUser?.role === "ADMINISTRATOR") {
+        setPredictionBlockedReason("Administrators cannot make predictions.");
+      } else if (currentUser?.role === "ORGANIZER") {
+        try {
+          const organizerQuestions = await getOrganizerQuestions();
+          if (organizerQuestions.questions.some((candidate) => candidate.id === detail.id)) {
+            setPredictionBlockedReason("Organizers cannot predict on their own questions.");
+          }
+        } catch (error) {
+          if (active) setPrivateError(error instanceof Error ? error.message : "Unable to verify prediction permissions.");
+        }
+      }
       const requestedAnswer = new URLSearchParams(window.location.search).get("answer");
       const selectedAnswer = detail.answers.find((answer) => answer.id === requestedAnswer) ?? detail.answers[0];
       if (!selectedAnswer) throw new Error("This question has no available answers.");
@@ -213,7 +228,7 @@ export default function QuestionDetailPage() {
   useEffect(() => {
     setPreview(null);
     setPreviewLoading(false);
-    if (!user || !answerId || !validBudget || insufficient || closed || pending) return;
+    if (!user || predictionBlockedReason || !answerId || !validBudget || insufficient || closed || pending) return;
     const controller = new AbortController();
     let active = true;
     const timer = window.setTimeout(() => {
@@ -359,7 +374,7 @@ export default function QuestionDetailPage() {
       view="arena"
       user={user}
       signOutDisabled={submitting || Boolean(pending)}
-      onNavigate={(view) => router.push(view === "leaderboard" ? "/?view=leaderboard" : "/")}
+      onNavigate={(view) => router.push(view === "arena" ? "/" : `/?view=${view}`)}
       onAuthNavigate={(mode) => { setAuthMode(mode); setAuthView(true); }}
       onSignOut={() => { void handleSignOut(); }}
     >
@@ -435,6 +450,8 @@ export default function QuestionDetailPage() {
                   </>
                 ) : !user ? (
                   <button className="button button-primary" onClick={() => { setAuthMode("login"); setAuthView(true); }} type="button">Sign in to predict</button>
+                ) : predictionBlockedReason ? (
+                  <p className="closed">{predictionBlockedReason}</p>
                 ) : (
                   <>
                     <fieldset disabled={submitting || Boolean(pending)}>

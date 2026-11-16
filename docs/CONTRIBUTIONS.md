@@ -2,7 +2,7 @@
 
 This is a snapshot of GitHub issue assignments, pull request authorship, and
 commit history through the main branch's merge of
-[#92](https://github.com/chenx16/cs6983-p2-team10/pull/92) on November 15, 2026.
+[#98](https://github.com/chenx16/cs6983-p2-team10/pull/98) on November 15, 2026.
 An assignment is not proof that work was completed. Pull request authorship
 does not imply sole authorship of every commit or review. Git commit display
 names can differ from GitHub usernames; PR authorship below uses GitHub's PR
@@ -78,6 +78,10 @@ The following links are PRs rather than issue numbers:
   [#81](https://github.com/chenx16/cs6983-p2-team10/pull/81),
   [#82](https://github.com/chenx16/cs6983-p2-team10/pull/82), and
   [#91](https://github.com/chenx16/cs6983-p2-team10/pull/91).
+- Responsive UI and navigation fixes:
+  [#95](https://github.com/chenx16/cs6983-p2-team10/pull/95),
+  [#97](https://github.com/chenx16/cs6983-p2-team10/pull/97), and
+  [#98](https://github.com/chenx16/cs6983-p2-team10/pull/98).
 - The HW3 experiments
   [#19](https://github.com/chenx16/cs6983-p2-team10/pull/19) and
   [#20](https://github.com/chenx16/cs6983-p2-team10/pull/20) were closed without
@@ -114,6 +118,8 @@ The following links are PRs rather than issue numbers:
   [#90](https://github.com/chenx16/cs6983-p2-team10/pull/90),
   [#92](https://github.com/chenx16/cs6983-p2-team10/pull/92), and
   [#93](https://github.com/chenx16/cs6983-p2-team10/pull/93).
+- Prediction role permissions:
+  [#96](https://github.com/chenx16/cs6983-p2-team10/pull/96).
 
 The main-branch commit history also includes @qiong-wu-2317's initial product
 requirements, design references, and project scaffold. Automated Dependabot

@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { PrismaClient, QuestionStatus, QuestionType } from "@prisma/client";
+import { PrismaClient, QuestionStatus, QuestionType, Role } from "@prisma/client";
 import request from "supertest";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { resetDatabase } from "./test/reset-db.js";
@@ -28,6 +28,25 @@ const createScenario = async () => {
   const user = await prisma.user.findUniqueOrThrow({
     where: { email: "prediction-user@example.com" },
   });
+  const organizerRegistration = await request(app).post("/api/v1/auth/register").send({
+    username: "questionorganizer",
+    email: "question-organizer@example.com",
+    password: "CorrectHorse1",
+  });
+  expect(organizerRegistration.status).toBe(201);
+  const organizer = await prisma.user.update({
+    where: { email: "question-organizer@example.com" },
+    data: { role: Role.ORGANIZER },
+  });
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { role: Role.USER },
+  });
+  const predictorLogin = await request(app).post("/api/v1/auth/login").send({
+    identifier: "prediction-user@example.com",
+    password: "CorrectHorse1",
+  });
+  expect(predictorLogin.status).toBe(200);
   const category = await prisma.category.create({ data: { name: "Prediction tests" } });
   const question = await prisma.question.create({
     data: {
@@ -35,7 +54,7 @@ const createScenario = async () => {
       type: QuestionType.AB,
       status: QuestionStatus.OPEN,
       categoryId: category.id,
-      organizerId: user.id,
+      organizerId: organizer.id,
       deadline: new Date("2030-06-01T18:00:00-07:00"),
       eventTime: new Date("2030-06-01T19:00:00-07:00"),
       outcomeCriteria: "The test result determines the outcome.",
@@ -54,15 +73,62 @@ const createScenario = async () => {
 
   return {
     app,
-    cookie,
+    cookie: predictorLogin.headers["set-cookie"]?.[0],
     question,
     answerA: question.answers.find((answer) => answer.sortOrder === 0)!,
     answerB: question.answers.find((answer) => answer.sortOrder === 1)!,
     user,
+    organizer,
   };
 };
 
 describe("prediction preview and placement", () => {
+  it("rejects administrators and organizers from predicting where prohibited", async () => {
+    const scenario = await createScenario();
+    const previewPath = `/api/v1/private/questions/${scenario.question.id}/predictions/preview`;
+    const adminRegistration = await request(scenario.app).post("/api/v1/auth/register").send({
+      username: "adminpredictor",
+      email: "admin-predictor@example.com",
+      password: "CorrectHorse1",
+    });
+    expect(adminRegistration.status).toBe(201);
+    await prisma.user.update({
+      where: { email: "admin-predictor@example.com" },
+      data: { role: Role.ADMINISTRATOR },
+    });
+    const adminLogin = await request(scenario.app).post("/api/v1/auth/login").send({
+      identifier: "admin-predictor@example.com",
+      password: "CorrectHorse1",
+    });
+    const adminResponse = await request(scenario.app)
+      .post(previewPath)
+      .set("Cookie", adminLogin.headers["set-cookie"]?.[0]!)
+      .send({ answerId: scenario.answerA.id, budget: 10 });
+    expect(adminResponse.status).toBe(403);
+    expect(adminResponse.body.error.code).toBe("FORBIDDEN");
+    const adminPlacement = await request(scenario.app)
+      .post(`/api/v1/private/questions/${scenario.question.id}/predictions`)
+      .set("Cookie", adminLogin.headers["set-cookie"]?.[0]!)
+      .send({ answerId: scenario.answerA.id, budget: 10, minShares: 0, idempotencyKey: "admin-prediction" });
+    expect(adminPlacement.status).toBe(403);
+
+    const organizerLogin = await request(scenario.app).post("/api/v1/auth/login").send({
+      identifier: "question-organizer@example.com",
+      password: "CorrectHorse1",
+    });
+    const organizerResponse = await request(scenario.app)
+      .post(previewPath)
+      .set("Cookie", organizerLogin.headers["set-cookie"]?.[0]!)
+      .send({ answerId: scenario.answerA.id, budget: 10 });
+    expect(organizerResponse.status).toBe(403);
+    expect(organizerResponse.body.error.code).toBe("FORBIDDEN");
+    const organizerPlacement = await request(scenario.app)
+      .post(`/api/v1/private/questions/${scenario.question.id}/predictions`)
+      .set("Cookie", organizerLogin.headers["set-cookie"]?.[0]!)
+      .send({ answerId: scenario.answerA.id, budget: 10, minShares: 0, idempotencyKey: "organizer-prediction" });
+    expect(organizerPlacement.status).toBe(403);
+  });
+
   it("rate limits preview per user without consuming the placement limit", async () => {
     const scenario = await createScenario();
     const previewPath = `/api/v1/private/questions/${scenario.question.id}/predictions/preview`;
@@ -287,7 +353,7 @@ describe("prediction preview and placement", () => {
       });
     expect(insufficient.status).toBe(422);
     expect(await prisma.prediction.count()).toBe(0);
-    expect(await prisma.creditLedger.count()).toBe(1);
+    expect(await prisma.creditLedger.count()).toBe(2);
     const unchangedQuestion = await prisma.question.findUniqueOrThrow({
       where: { id: scenario.question.id },
     });

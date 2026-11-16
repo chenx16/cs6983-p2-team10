@@ -100,6 +100,15 @@ describe("OpenAPI documentation served by Swagger", () => {
       .toEqual(expect.arrayContaining(["200", "201", "401", "404", "409", "422", "429"]));
   });
 
+  it("documents prediction permission errors for placement and preview", () => {
+    for (const path of [
+      "/api/v1/private/questions/{questionId}/predictions",
+      "/api/v1/private/questions/{questionId}/predictions/preview",
+    ]) {
+      expect.soft(document.paths[path]?.post?.responses["403"], path).toBeDefined();
+    }
+  });
+
   it("documents rate limits for organizer and administrator operations", () => {
     for (const [path, method] of routes.filter(([path]) =>
       path.startsWith("/api/v1/private/organizer/") || path.startsWith("/api/v1/private/admin/")
@@ -107,5 +116,13 @@ describe("OpenAPI documentation served by Swagger", () => {
       expect.soft(document.paths[path]?.[method]?.responses["429"], `${method.toUpperCase()} ${path}`)
         .toBeDefined();
     }
+  });
+
+  it("serves a responsive ForecastHub theme for the API reference", async () => {
+    const response = await request(createApp()).get("/api/docs/");
+    expect(response.status).toBe(200);
+    expect(response.text).toContain("ForecastHub API Reference");
+    expect(response.text).toContain(".swagger-ui .scheme-container");
+    expect(response.text).toContain("@media (max-width: 640px)");
   });
 });

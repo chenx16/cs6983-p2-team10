@@ -62,7 +62,10 @@ Private routes use the `access_token` cookie. A user's
 `GET /api/v1/private/predictions` response contains only their own predictions,
 including the question, selected answer, charge, shares, timestamp, and
 pending, won, lost, or refunded status. The prediction preview and placement
-routes calculate prices and validate credits on the server.
+routes calculate prices and validate credits on the server. Administrators
+cannot make predictions; Organizers can predict on questions owned by another
+organizer, but not their own. Both preview and placement return `403 FORBIDDEN`
+when these role restrictions apply.
 
 Organizers and Administrators can use `/organizer` to create and edit owned
 drafts, create categories, publish valid A/B questions, close open questions

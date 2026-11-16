@@ -67,7 +67,9 @@ const privateErrors = { "401": errors.unauthenticated };
 const organizerErrors = { ...privateErrors, "403": errors.forbidden, "429": errors.rateLimited };
 const adminErrors = { ...privateErrors, "403": errors.adminForbidden, "429": errors.rateLimited };
 const predictionErrors = {
-  ...privateErrors, "404": errors.publicNotFound,
+  ...privateErrors,
+  "403": error("Administrators cannot predict, and organizers cannot predict on their own questions.", "FORBIDDEN", "Administrators cannot make predictions."),
+  "404": errors.publicNotFound,
   "409": error("QUESTION_NOT_OPEN or QUESTION_CLOSED.", "QUESTION_CLOSED", "The prediction deadline has passed."),
   "422": errors.invalidMarket, "429": errors.rateLimited,
 };

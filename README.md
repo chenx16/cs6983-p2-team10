@@ -11,7 +11,7 @@ administrators oversee the platform.
 
 - [Production app](https://cs6983-p2-team10.vercel.app/)
 - [API documentation (Swagger)](https://cs6983-p2-team10-api.onrender.com/api/docs/)
-- Demo video: link to be added
+- [Demo video](https://northeastern-my.sharepoint.com/:v:/g/personal/chen_xinla_northeastern_edu/IQDmbE0QB9B1QKxmp_R0lldBAU46gWRhf37e3cVvgoNnNGQ?nav=eyJyZWZlcnJhbEluZm8iOnsicmVmZXJyYWxBcHAiOiJTdHJlYW1XZWJBcHAiLCJyZWZlcnJhbFZpZXciOiJTaGFyZURpYWxvZy1MaW5rIiwicmVmZXJyYWxBcHBQbGF0Zm9ybSI6IldlYiIsInJlZmVycmFsTW9kZSI6InZpZXcifX0%3D&e=KmlC2k)
 - [Architecture and CI/CD diagrams](docs/ARCHITECTURE.md)
 - [Database schema](docs/SCHEMA.md)
 
@@ -37,12 +37,16 @@ team privately through Canvas. Do not post credentials in this public repository
   credits, check the balance, and view personal prediction history.
 - **Organizer:** Create, edit, publish, and close A/B questions; resolve eligible
   questions after their deadline and event time using an answer and evidence.
-  Organizers can also create a category from the draft form.
+  Organizers can also create a category from the draft form and predict on
+  questions owned by another organizer.
 - **Administrator:** Use organizer tools, manage user roles, cancel questions
-  with refunds, and review administrative history.
+  with refunds, and review administrative history. Administrators cannot make
+  predictions, and organizers cannot predict on their own questions.
 
 Public prices update over WebSockets; the API handles permissions, predictions,
-credits, and payouts. Features deferred from this release are listed in the
+credits, and payouts. Registration on an empty database creates an
+Administrator; later registrations receive the User role. Features deferred
+from this release are listed in the
 [Sprint 2 descoping decisions](docs/sprints/sprint-2/descoping.md). Category
 creation was subsequently added in
 [PR #88](https://github.com/chenx16/cs6983-p2-team10/pull/88).
@@ -109,6 +113,9 @@ For **local development only**, `npm run db:seed` adds example categories,
 questions, and demo users. **Never run it against production or a public
 database:** it creates demo accounts, including an Organizer, with a publicly
 known password. Do not use the example secret outside local development.
+The seed stores demo passwords using scrypt, while sign-in currently checks
+bcrypt hashes, so these seeded accounts cannot sign in. The seed also creates
+users, so register the first Administrator before seeding an empty database.
 
 ## Testing
 
@@ -165,7 +172,9 @@ exact database name; `DATABASE_URL` is not a fallback for `E2E_DATABASE_URL`.
 The seed creates test-only accounts with a known password. Never point it at a
 shared or public database. Use a separate checkout if a Next.js development
 server is running, because the test builds the web app and replaces that
-checkout's `.next` output.
+checkout's `.next` output. Playwright reuses responding servers on ports 43017
+and 43018, so ensure those ports are free before running this example; an
+unrelated existing server could cause the tests to use the wrong environment.
 
 For example, with Docker running, port 55432 free, and no existing container
 named `forecasthub-e2e`:
@@ -186,8 +195,8 @@ unset E2E_DATABASE_URL
 
 Only continue if the container starts successfully, and wait for PostgreSQL to
 be ready before running migrations. Stop only the container created for this
-test. Playwright starts its own API and web servers on ports 43017 and 43018
-and refuses to reuse existing servers.
+test. Playwright uses ports 43017 and 43018 for its API and web servers, and
+CI runs against a dedicated PostgreSQL service.
 
 ### Test-driven development
 
